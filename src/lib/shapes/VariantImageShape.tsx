@@ -35,7 +35,7 @@ function VariantImageComponent({ shape }: { shape: VariantImageShape }) {
     // First try to match by variantIndex (more reliable)
     const variantIndex = shape.props.variantIndex;
     const allShapes = editor.getCurrentPageShapes();
-    
+
     let parentGridCell = allShapes.find((s) => {
       if (s.type !== 'grid-cell') return false;
       const cellProps = s.props as { cellType?: string; cellIndex?: number };
@@ -50,14 +50,14 @@ function VariantImageComponent({ shape }: { shape: VariantImageShape }) {
           if (s.type !== 'grid-cell') return false;
           const cellProps = s.props as { cellType?: string; cellIndex?: number };
           if (cellProps?.cellType !== 'variant') return false;
-          
+
           const cellBounds = editor.getShapePageBounds(s.id);
           if (!cellBounds) return false;
-          
+
           // More lenient check: variant image center should be inside grid cell
           const imageCenterX = variantImageBounds.x + variantImageBounds.width / 2;
           const imageCenterY = variantImageBounds.y + variantImageBounds.height / 2;
-          
+
           return (
             imageCenterX >= cellBounds.x &&
             imageCenterX <= cellBounds.x + cellBounds.width &&
@@ -73,7 +73,7 @@ function VariantImageComponent({ shape }: { shape: VariantImageShape }) {
       requestAnimationFrame(() => {
         // Select the parent grid-cell to show the Generate UI button
         editor.setSelectedShapes([parentGridCell.id]);
-        
+
         // Force a re-render by updating the selection again after a small delay
         setTimeout(() => {
           const currentSelection = editor.getSelectedShapeIds();
@@ -184,7 +184,4 @@ export class VariantImageShapeUtil extends BaseBoxShapeUtil<VariantImageShape> {
     return false;
   }
 
-  override canDrag() {
-    return false;
-  }
 }

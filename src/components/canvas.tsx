@@ -192,27 +192,6 @@ function GenerateGridButton() {
   );
 }
 
-function CustomStylePanel() {
-  const styles = useRelevantStyles();
-
-  if (!styles) return null;
-
-  // Filter to only show dash, fill, and size
-  const allowedStyles = ['tldraw:dash', 'tldraw:fill', 'tldraw:size'];
-
-  const filteredStyles = new Map() as typeof styles;
-  for (const [key, value] of styles) {
-    if (allowedStyles.includes(key.id)) {
-      filteredStyles.set(key, value);
-    }
-  }
-
-  return (
-    <DefaultStylePanel>
-      <DefaultStylePanelContent styles={filteredStyles} />
-    </DefaultStylePanel>
-  );
-}
 
 function CanvasUI() {
   return (
