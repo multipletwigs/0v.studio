@@ -11,14 +11,16 @@ export type VariantImageShape = TLBaseShape<
     imageUrl: string;
     variantIndex: number;
     description?: string;
-    pending?: boolean;
+    pending?: boolean; // deprecated, use meta.pending instead
   }
 >;
 
 // Component for rendering the shape (extracted to use hooks)
 function VariantImageComponent({ shape }: { shape: VariantImageShape }) {
   const editor = useEditor();
-  const { w, h, imageUrl, description, pending } = shape.props;
+  const { w, h, imageUrl, description } = shape.props;
+  // Check meta first (new), fallback to props (old persisted shapes)
+  const pending = (shape.meta.pending ?? shape.props.pending) as boolean | undefined;
 
   const handleAccept = (e: React.PointerEvent) => {
     e.stopPropagation();
@@ -26,7 +28,7 @@ function VariantImageComponent({ shape }: { shape: VariantImageShape }) {
     editor.updateShape({
       id: shape.id,
       type: 'variant-image',
-      props: { pending: false },
+      meta: { pending: false },
     });
   };
 
@@ -53,12 +55,13 @@ function VariantImageComponent({ shape }: { shape: VariantImageShape }) {
             height: '100%',
             objectFit: 'contain',
             borderRadius: '8px',
-            opacity: pending ? 0.3 : 1,
+            opacity: pending ? 0.4 : 1,
+            mixBlendMode: 'multiply',
             transition: 'opacity 0.2s ease',
           }}
         />
         {pending && (
-          <div className="absolute inset-0 flex items-center justify-center gap-2">
+          <div className="absolute top-2 right-2 flex gap-2">
             <button
               type="button"
               onPointerDown={handleAccept}
@@ -92,6 +95,7 @@ export class VariantImageShapeUtil extends BaseBoxShapeUtil<VariantImageShape> {
     imageUrl: T.string,
     variantIndex: T.number,
     description: T.string.optional(),
+    // Keep for backwards compatibility with persisted shapes (we use meta.pending now)
     pending: T.boolean.optional(),
   };
 
@@ -101,7 +105,6 @@ export class VariantImageShapeUtil extends BaseBoxShapeUtil<VariantImageShape> {
       h: 360,
       imageUrl: '',
       variantIndex: 1,
-      pending: false,
     };
   }
 
@@ -121,13 +124,13 @@ export class VariantImageShapeUtil extends BaseBoxShapeUtil<VariantImageShape> {
     return <rect width={shape.props.w} height={shape.props.h} />;
   }
 
-  // Can be deleted
-  override canDelete() {
-    return true;
+
+  // Cannot be resized or dragged
+  override canResize() {
+    return false;
   }
 
-  // Can be resized
-  override canResize() {
-    return true;
+  override canDrag() {
+    return false;
   }
 }

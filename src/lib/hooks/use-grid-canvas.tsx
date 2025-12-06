@@ -39,43 +39,54 @@ const CELL_WIDTH = 600;
 const CELL_HEIGHT = 600;
 const GAP = 60;
 
+// Layout: Seed on left (x=0), variants to the right (positive x)
 function calculateCellBounds(
   index: number,
-  columns: number,
   cellWidth: number,
   cellHeight: number,
   gap: number
 ) {
-  const col = index % columns;
-  const row = Math.floor(index / columns);
+  // Seed is at index 0, positioned at x=0
+  // Variants are to the right with positive x values
+  const x = index * (cellWidth + gap);
   return {
-    x: col * (cellWidth + gap),
-    y: row * (cellHeight + gap),
+    x,
+    y: 0,
     w: cellWidth,
     h: cellHeight,
   };
 }
 
-function createGridCells(columns: number, rows: number): GridCell[] {
+function createGridCells(variantCount: number): GridCell[] {
   const cells: GridCell[] = [];
-  const totalCells = columns * rows;
 
-  for (let i = 0; i < totalCells; i++) {
+  // Seed cell at index 0 (x=0)
+  cells.push({
+    id: 'seed',
+    index: 0,
+    type: 'seed',
+    bounds: calculateCellBounds(0, CELL_WIDTH, CELL_HEIGHT, GAP),
+  });
+
+  // Variant cells to the left (negative x)
+  for (let i = 1; i <= variantCount; i++) {
     cells.push({
-      id: i === 0 ? 'seed' : `variant-${i}`,
+      id: `variant-${i}`,
       index: i,
-      type: i === 0 ? 'seed' : 'variant',
-      bounds: calculateCellBounds(i, columns, CELL_WIDTH, CELL_HEIGHT, GAP),
+      type: 'variant',
+      bounds: calculateCellBounds(i, CELL_WIDTH, CELL_HEIGHT, GAP),
     });
   }
 
   return cells;
 }
 
+const VARIANT_COUNT = 3;
+
 const initialState: GridState = {
-  cells: createGridCells(2, 2),
-  columns: 2,
-  rows: 2,
+  cells: createGridCells(VARIANT_COUNT),
+  columns: VARIANT_COUNT + 1, // seed + variants
+  rows: 1,
   cellWidth: CELL_WIDTH,
   cellHeight: CELL_HEIGHT,
   gap: GAP,
@@ -89,11 +100,11 @@ function gridReducer(state: GridState, action: GridAction): GridState {
       return { ...state, cells: action.cells, initialized: true };
 
     case 'SET_GRID_SIZE': {
-      const newCells = createGridCells(action.columns, action.rows);
+      const newCells = createGridCells(VARIANT_COUNT);
       return {
         ...state,
-        columns: action.columns,
-        rows: action.rows,
+        columns: VARIANT_COUNT + 1,
+        rows: 1,
         cells: newCells,
         initialized: false,
       };
@@ -166,53 +177,35 @@ export function GridProvider({ children }: { children: ReactNode }) {
       // Skip if this page is already initialized
       if (initializedPagesRef.current.has(currentPageId)) return;
 
-      const newCells = state.cells.map((cell) => {
+      // Only create the seed cell shape
+      const seedCell = state.cells.find((c) => c.type === 'seed');
+      if (seedCell) {
         const frameId = createShapeId();
-
-        // Create a grid-cell shape for each cell
         editor.createShape({
           id: frameId,
           type: 'grid-cell',
-          x: cell.bounds.x,
-          y: cell.bounds.y,
+          x: seedCell.bounds.x,
+          y: seedCell.bounds.y,
+          isLocked: true,
           props: {
-            w: cell.bounds.w,
-            h: cell.bounds.h,
-            cellType: cell.type,
-            cellIndex: cell.index,
-            label: cell.type === 'seed' ? '🌱 SEED' : `Variant ${cell.index}`,
+            w: seedCell.bounds.w,
+            h: seedCell.bounds.h,
+            cellType: 'seed',
+            cellIndex: 0,
+            label: '✏️ DRAW YOUR LOFI MOCKUP HERE!!',
           },
         });
 
-        return { ...cell, frameId };
-      });
-
-      // Lock all grid cells so they can't be moved accidentally
-      editor.updateShapes(
-        newCells.map((cell) => ({
-          id: cell.frameId!,
-          type: 'grid-cell',
-          isLocked: true,
-        }))
-      );
-
-      // Center the view on the grid
-      const totalWidth = state.columns * (state.cellWidth + state.gap) - state.gap;
-      const totalHeight = state.rows * (state.cellHeight + state.gap) - state.gap;
-      editor.zoomToBounds(
-        {
-          x: -state.gap,
-          y: -state.gap,
-          w: totalWidth + state.gap * 2,
-          h: totalHeight + state.gap * 2,
-        },
-        { animation: { duration: 0 } }
-      );
+        // Center camera on the seed cell
+        const centerX = seedCell.bounds.x + seedCell.bounds.w / 2;
+        const centerY = seedCell.bounds.y + seedCell.bounds.h / 2;
+        editor.centerOnPoint({ x: centerX, y: centerY }, { animation: { duration: 0 } });
+      }
 
       initializedPagesRef.current.add(currentPageId);
-      dispatch({ type: 'INIT_GRID', cells: newCells });
+      dispatch({ type: 'INIT_GRID', cells: state.cells });
     },
-    [state.cells, state.columns, state.rows, state.cellWidth, state.cellHeight, state.gap]
+    [state.cells]
   );
 
   const initializeGrid = useCallback(
@@ -234,7 +227,7 @@ export function GridProvider({ children }: { children: ReactNode }) {
       editor.setCurrentPage(newPageId);
 
       // Reset state for the new page
-      dispatch({ type: 'SET_GRID_SIZE', columns: 2, rows: 2 });
+      dispatch({ type: 'SET_GRID_SIZE', columns: VARIANT_COUNT + 1, rows: 1 });
 
       // Initialize grid on the new page after a tick
       setTimeout(() => {
@@ -247,14 +240,15 @@ export function GridProvider({ children }: { children: ReactNode }) {
   const generateVariants = useCallback(
     async (editor: Editor) => {
       const seedCell = state.cells.find((c) => c.type === 'seed');
-      if (!seedCell?.frameId) return;
+      if (!seedCell) return;
 
-      // Get shapes inside the seed frame
+      // Get shapes inside the seed cell bounds (excluding grid-cell shapes)
       const allShapes = editor.getCurrentPageShapes();
       const seedShapes = allShapes.filter((shape) => {
-        if (shape.id === seedCell.frameId) return false;
-        if (shape.parentId === seedCell.frameId) return true;
-        // Also check if shape bounds overlap with seed cell
+        // Skip grid-cell and variant-image shapes
+        if (shape.type === 'grid-cell' || shape.type === 'variant-image') return false;
+
+        // Check if shape bounds overlap with seed cell
         const shapeBounds = editor.getShapePageBounds(shape.id);
         if (!shapeBounds) return false;
         return (
@@ -271,6 +265,32 @@ export function GridProvider({ children }: { children: ReactNode }) {
       }
 
       dispatch({ type: 'START_GENERATION' });
+
+      // Create placeholder variant cell shapes with generating state
+      const variantCells = state.cells.filter((c) => c.type === 'variant');
+      const variantCellShapeIds: Record<string, ReturnType<typeof createShapeId>> = {};
+
+      for (const cell of variantCells) {
+        const cellShapeId = createShapeId();
+        variantCellShapeIds[cell.id] = cellShapeId;
+        editor.createShape({
+          id: cellShapeId,
+          type: 'grid-cell',
+          x: cell.bounds.x,
+          y: cell.bounds.y,
+          isLocked: true,
+          props: {
+            w: cell.bounds.w,
+            h: cell.bounds.h,
+            cellType: 'variant',
+            cellIndex: cell.index,
+            label: `Variant ${cell.index}`,
+          },
+          meta: {
+            isGenerating: true,
+          },
+        });
+      }
 
       try {
         const shapeIds = seedShapes.map((s) => s.id);
@@ -294,8 +314,6 @@ export function GridProvider({ children }: { children: ReactNode }) {
           reader.onloadend = () => resolve(reader.result as string);
           reader.readAsDataURL(blob.blob);
         });
-
-        const variantCells = state.cells.filter((c) => c.type === 'variant');
 
         const response = await fetch('/api/generate-grid-variants', {
           method: 'POST',
@@ -333,14 +351,41 @@ export function GridProvider({ children }: { children: ReactNode }) {
               imageUrl: variant.imageUrl,
               variantIndex: cell.index,
               description: variant.description,
+            },
+            meta: {
               pending: true,
             },
           });
         }
 
+        // Update variant cell shapes to remove generating state
+        for (const cell of variantCells) {
+          const cellShapeId = variantCellShapeIds[cell.id];
+          if (cellShapeId) {
+            editor.updateShape({
+              id: cellShapeId,
+              type: 'grid-cell',
+              meta: { isGenerating: false },
+            });
+          }
+        }
+
+        // Center camera on all content (seed + variants)
+        const allCells = state.cells;
+        const minX = Math.min(...allCells.map((c) => c.bounds.x));
+        const maxX = Math.max(...allCells.map((c) => c.bounds.x + c.bounds.w));
+        const centerX = (minX + maxX) / 2;
+        const centerY = seedCell.bounds.y + seedCell.bounds.h / 2;
+        editor.centerOnPoint({ x: centerX, y: centerY }, { animation: { duration: 500 } });
+
         dispatch({ type: 'GENERATION_COMPLETE' });
       } catch (error) {
         console.error('Generation error:', error);
+        // Remove placeholder variant cells on error
+        const shapeIdsToDelete = Object.values(variantCellShapeIds);
+        if (shapeIdsToDelete.length > 0) {
+          editor.deleteShapes(shapeIdsToDelete);
+        }
         dispatch({ type: 'GENERATION_ERROR' });
         alert('Failed to generate variants. Please try again.');
       }

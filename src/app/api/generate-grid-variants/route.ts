@@ -15,53 +15,44 @@ const variantDescriptionsSchema = z.object({
     .describe('An array of exactly 3 different detailed layout variant descriptions. Each description should be a separate string element in the array, not a single combined string.'),
 });
 
-const DESCRIPTION_SYSTEM = `You are a creative UI/UX design analyst specializing in digital wireframes and mockups. Given a tldraw drawing (the "seed"), analyze it deeply and generate 3 highly detailed and creative layout variant descriptions.
+const DESCRIPTION_SYSTEM = `You are a skilled UI/UX designer. Given a tldraw wireframe drawing (the "seed"), generate 3 practical yet creative variant designs.
 
-CONTEXT: The seed image is a drawing created in tldraw (a digital drawing/whiteboard tool). All variants should maintain the tldraw drawing style - simple vector-like drawings with clean lines, basic shapes (rectangles, circles, lines), and minimal colors typical of wireframe/mockup aesthetics.
+BALANCE: Be creative but realistic. These should be usable UI designs, not abstract art.
+
+CREATIVE EXPLORATION:
+- If the user draws a music player: explore different layouts (horizontal vs vertical), different control styles (minimal vs full-featured), different visual treatments (compact widget vs full-screen player)
+- If they draw a form: try different arrangements (single column vs multi-column), different input styles, adding helpful elements like progress indicators or inline validation
+- If they draw a card: explore list view vs grid view, compact vs expanded, with/without images or metadata
+- Think about real-world UI patterns: iOS style, Material Design, minimal/clean, dashboard style, mobile vs desktop
 
 Your task:
-1. Identify what the seed drawing depicts (seed_context) - describe the content, elements, purpose, and visual style in detail
-2. Analyze what components or functionality might be missing that this type of element typically has
-3. Generate 3 highly creative and distinct layout variants that explore different arrangements AND potentially include additional typical components/functionality
+1. Identify what the seed drawing depicts (seed_context)
+2. Generate 3 distinct but REALISTIC UI variants - different layouts, styles, and arrangements that could actually ship in a product
 
-Each variant description MUST be extremely detailed and include:
+Each variant description should include:
 
-LAYOUT & STRUCTURE:
-- Precise spatial arrangement (e.g., "navigation bar at top spanning full width", "3-column grid layout with 20px gaps", "sidebar on left taking 1/4 of width")
-- Exact positioning of elements (top/bottom/left/right/center, with relative sizing)
-- Hierarchy and visual flow (what catches attention first, reading order)
-- Spacing and padding details (tight, spacious, compact, airy)
+LAYOUT:
+- Spatial arrangement and element positioning
+- Visual hierarchy and flow
+- Spacing and proportions
 
-VISUAL ELEMENTS:
-- All shapes present (rectangles, circles, lines, text blocks, icons)
-- Size and proportions of each element relative to others
-- Visual style (outlined boxes, filled shapes, line weights, rounded corners vs sharp corners)
-- Text elements (headings, body text, labels, captions) and their relative sizing
-- Any icons, buttons, or interactive elements with their appearance
+VISUAL STYLE:
+- Shape treatments (rounded vs sharp, filled vs outlined)
+- Typography hints (heading sizes, label placement)
+- Any icons, buttons, or interactive elements
 
-CREATIVE VARIATIONS:
-- Completely different spatial arrangements from the seed (horizontal → vertical, grid → stack, etc.)
-- Additional missing typical components that would enhance functionality (if it's a form: add submit button, validation messages; if it's a card: add actions, timestamps, avatars; if it's a navigation: add search, notifications, user menu)
-- Experimental layouts that push creative boundaries while staying practical
-- Different visual hierarchies and emphasis
+FUNCTIONAL ADDITIONS:
+- What useful elements could enhance this UI?
+- Different ways to organize the same information
+- Mobile-friendly vs desktop-optimized approaches
 
-COLOR & STYLE NOTES:
-- Mention any color blocks, shading, or emphasis areas
-- Note the drawing style specifics (hand-drawn feel, geometric precision, wireframe aesthetic)
-- Background treatment (white background, sections, dividers)
-
-FUNCTIONAL ENHANCEMENTS:
-- What new interactive elements are added (buttons, dropdowns, toggles, sliders)
-- What information hierarchy changes improve usability
-- How the variant solves potential UX issues from the seed
-
-Each description should be 4-6 sentences minimum, rich with visual and spatial details that an image generation model can use to accurately recreate the design. Be specific about EVERYTHING - shapes, sizes, positions, colors, text, spacing, and relationships between elements.
+Keep the tldraw wireframe aesthetic (clean lines, basic shapes, minimal colors). Each description should be 3-5 sentences with enough detail to recreate the design.
 
 OUTPUT FORMAT:
-- seed_context: A single detailed string describing the seed image
-- descriptions: An array containing exactly 3 separate string descriptions (NOT a single combined string, but 3 individual array elements)
+- seed_context: What the seed image depicts
+- descriptions: Array of exactly 3 variant descriptions
 
-Return exactly 3 creative variant descriptions that are visually distinct and functionally enhanced.`;
+Be creative within the bounds of practical UI design.`;
 
 interface GridVariantsRequest {
   image: string;
