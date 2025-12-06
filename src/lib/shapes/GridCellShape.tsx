@@ -1,11 +1,11 @@
 import { BaseBoxShapeUtil, HTMLContainer, Rectangle2d, T, useEditor, useValue } from 'tldraw';
 import type { TLBaseShape, RecordProps } from 'tldraw';
-import { Sparkle } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { createClient, type ChatDetail } from 'v0-sdk';
 import { put } from '@vercel/blob';
 import { useUIGenerationHistory } from '@/lib/stores/ui-generation-history';
 import { PreviewModal } from '@/components/preview-modal';
+import { toast } from 'sonner';
 
 // Type definition
 export type GridCellShape = TLBaseShape<
@@ -62,22 +62,32 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
   const [isGeneratingUI, setIsGeneratingUI] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [chatUrl, setChatUrl] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
 
-  // Create v0 client
-  const client = createClient({
-    apiKey: process.env.NEXT_PUBLIC_V0_API_KEY || process.env.V0_API_KEY,
-  });
-
-  const handleGenerateUIClick = async (e: React.MouseEvent) => {
+  const handleGenerateUIClick = async (e: React.PointerEvent) => {
     e.stopPropagation();
+    e.preventDefault();
+
+    console.log('[GridCell] Generate UI button clicked');
 
     setIsGeneratingUI(true);
-    setError(null);
     setPreviewUrl('');
     setChatUrl('');
 
+    // Show loading toast with cell index (consistent identifier)
+    const cellIdentifier = shape.props.cellType === 'variant' 
+      ? `Variant ${shape.props.cellIndex}` 
+      : `Seed`;
+    const toastId = toast.loading(`Generating UI ${cellIdentifier}`, {
+      position: 'bottom-right',
+    });
+
     try {
+      // Create v0 client
+      const client = createClient({
+        apiKey: process.env.NEXT_PUBLIC_V0_API_KEY || process.env.V0_API_KEY,
+      });
+
+      console.log('[GridCell] Starting UI generation...');
       // Get all shapes inside this grid cell (excluding the grid-cell itself)
       const cellBounds = editor.getShapePageBounds(shape.id);
       if (!cellBounds) {
@@ -85,6 +95,9 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
       }
 
       const allShapes = editor.getCurrentPageShapes();
+      console.log('[GridCell] Total shapes on page:', allShapes.length);
+      console.log('[GridCell] Cell bounds:', cellBounds);
+
       const shapesInCell = allShapes.filter((s) => {
         // Skip grid-cell shapes
         if (s.type === 'grid-cell') return false;
@@ -93,13 +106,20 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
         if (!shapeBounds) return false;
 
         // Check if shape is inside the grid cell
-        return (
+        const isInside =
           shapeBounds.x >= cellBounds.x &&
           shapeBounds.y >= cellBounds.y &&
           shapeBounds.x + shapeBounds.width <= cellBounds.x + cellBounds.width &&
-          shapeBounds.y + shapeBounds.height <= cellBounds.y + cellBounds.height
-        );
+          shapeBounds.y + shapeBounds.height <= cellBounds.y + cellBounds.height;
+
+        if (isInside) {
+          console.log('[GridCell] Found shape in cell:', s.type, s.id);
+        }
+
+        return isInside;
       });
+
+      console.log('[GridCell] Shapes in cell:', shapesInCell.length);
 
       if (shapesInCell.length === 0) {
         throw new Error('No shapes found in this cell');
@@ -151,17 +171,17 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
       console.log('[generate-ui] Creating v0 chat with image...');
 
       const chat = await client.chats.create({
-        message: 'Build a React TypeScript app based on this design',
+        message: 'Build a React TypeScript component based on this mockup',
         system: `
           You are an expert React developer who builds the most beautiful UI in the world. 
           You will receive a mockup of a component. You will need to build a complete version of it, following the mockup.
-          Generate clean, production-ready code with Tailwind CSS and shadcn/ui components.
+          Generate clean, production-ready code and UI with Tailwind CSS and shadcn/ui components.
           It should be production ready, can be competing with any other app in the market.
         `,
         responseMode: 'sync',
         attachments: [
           {
-            url: url,
+            url,
           },
         ],
         modelConfiguration: {
@@ -243,11 +263,26 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
         previewUrl,
       });
 
+      // Dismiss loading toast and show success
+      toast.dismiss(toastId);
+      toast.success('UI generated successfully!', {
+        position: 'bottom-right',
+      });
+
       setIsModalOpen(true);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate UI';
-      setError(errorMessage);
-      console.error('Error generating UI:', err);
+      
+      // Dismiss loading toast and show error
+      toast.dismiss(toastId);
+      toast.error(errorMessage, {
+        position: 'bottom-right',
+      });
+
+      console.error('[GridCell] Error generating UI:', err);
+      if (err instanceof Error) {
+        console.error('[GridCell] Error stack:', err.stack);
+      }
     } finally {
       setIsGeneratingUI(false);
     }
@@ -272,8 +307,8 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
             50% { opacity: 0.4; }
           }
           @keyframes sparkle {
-            0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
-            50% { transform: scale(1.2) rotate(180deg); opacity: 0.8; }
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.5); }
           }
           @keyframes shimmer {
             0% { background-position: -1000px 0; }
@@ -285,12 +320,11 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
           }
         `}
       </style>
-      {/* Generate UI Button - fancy magic button for accepted variants */}
-      {/* Button persists once variant is accepted, until next generateVariants call */}
-      {cellType === 'variant' && hasAcceptedVariant && (
+      {/* Generate UI Button - hidden when generating */}
+      {cellType === 'variant' && hasAcceptedVariant && !isGeneratingUI && (
         <button
           type="button"
-          onClick={handleGenerateUIClick}
+          onPointerDown={handleGenerateUIClick}
           disabled={isGeneratingUI}
           style={{
             position: 'absolute',
@@ -306,14 +340,13 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
             fontSize: '14px',
             fontWeight: '700',
             cursor: 'pointer',
-            zIndex: 30,
+            zIndex: 1000,
             boxShadow: '0 8px 24px rgba(139, 92, 246, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15)',
             pointerEvents: 'all',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
             letterSpacing: '0.5px',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             transform: 'translateZ(0)',
           }}
           onMouseEnter={(e) => {
@@ -325,14 +358,15 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
             e.currentTarget.style.boxShadow = '0 8px 24px rgba(139, 92, 246, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15)';
           }}
         >
-          <Sparkle
-            size={18}
-            weight="fill"
-            style={{
-              animation: isGeneratingUI ? 'sparkle 0.5s ease-in-out infinite' : 'sparkle 2s ease-in-out infinite',
-            }}
-          />
-          <span>{isGeneratingUI ? 'Generating...' : '✨ Generate UI'}</span>
+          <span>
+            <span style={{
+              fontSize: '14px',
+              display: 'inline-block',
+              marginRight: '6px',
+              animation: 'sparkle 2s ease-in-out infinite',
+            }}>✨</span> 
+            Generate UI
+          </span>
         </button>
       )}
       {/* Border element - separate so only it animates */}
@@ -350,14 +384,15 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
           animation: isGenerating ? 'borderPulse 1.5s ease-in-out infinite' : undefined,
         }}
       />
-      {/* Label */}
+      {/* Label - hide when UI is generating or when Generate UI button is visible to avoid overlap */}
+      {!isGeneratingUI && !(cellType === 'variant' && hasAcceptedVariant) && (
       <div
         style={{
           position: 'absolute',
           top: '12px',
-          left: cellType !== 'seed' && isGenerating ? '12%' : '21%',
+            left: cellType !== 'seed' && isGenerating ? '12%' : '21%',
           transform: 'translateX(-50%)',
-          backgroundColor: cellType === 'seed' ? '#3b82f6' : '#6b7280',
+            backgroundColor: cellType === 'seed' ? '#3b82f6' : '#6b7280',
           color: 'white',
           padding: '4px 12px',
           borderRadius: '9999px',
@@ -368,6 +403,7 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
       >
         {isGenerating ? '✨ Generating...' : label}
       </div>
+      )}
 
       {/* Preview Modal */}
       <PreviewModal
@@ -377,25 +413,6 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
         chatUrl={chatUrl}
       />
 
-      {/* Error Display */}
-      {error && (
-        <div
-          style={{
-            position: 'fixed',
-            top: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 1000,
-            backgroundColor: '#fee2e2',
-            border: '1px solid #fecaca',
-            borderRadius: '8px',
-            padding: '12px 16px',
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-          }}
-        >
-          <span style={{ fontSize: '14px', color: '#991b1b' }}>{error}</span>
-        </div>
-      )}
     </HTMLContainer>
   );
 }

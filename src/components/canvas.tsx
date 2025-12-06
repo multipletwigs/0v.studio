@@ -17,7 +17,6 @@ import 'tldraw/tldraw.css';
 import { VariantProvider } from '@/lib/hooks/use-variant-generation';
 import { GridProvider, useGridCanvas } from '@/lib/hooks/use-grid-canvas';
 import { VariantControls } from './variant-controls';
-import { GenerateUIButton } from './generate-ui-button';
 import { Sidebar } from './sidebar';
 import { downloadCanvas } from '@/lib/utils/export-canvas';
 import { GridCellShapeUtil } from '@/lib/shapes/GridCellShape';
@@ -219,7 +218,6 @@ function CanvasUI() {
   return (
     <>
       <Toolbar />
-      <GenerateUIButton />
       <VariantControls />
     </>
   );
