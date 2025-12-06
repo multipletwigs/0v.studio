@@ -46,6 +46,7 @@ function CanvasInner() {
       <div className="h-full w-full">
         <Tldraw
           persistenceKey='a'
+          licenseKey='tldraw-2026-03-16/WyJybFViaVJlMiIsWyIqIl0sMTYsIjIwMjYtMDMtMTYiXQ.cVnbg08UUamCi+6259s8/WrMR1WXyXjKFyApluCPEa0NexWO6V6CbfTqyCACn7ApofShT48ZphxFonuNDYIgEA'
           shapeUtils={[GridCellShapeUtil, VariantImageShapeUtil]}
           components={{
             ContextMenu: null,
