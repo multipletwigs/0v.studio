@@ -111,27 +111,6 @@ export function Sidebar() {
               History ({filteredHistory.length})
             </h3>
           </div>
-          {filteredHistory.length > 0 && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (filterCellIdentifier) {
-                  // Remove only filtered items
-                  filteredHistory.forEach((item) => {
-                    removeFromHistory(item.id);
-                  });
-                  setFilterCellIdentifier(null);
-                } else {
-                  clearHistory();
-                }
-              }}
-              className="h-6 w-6 p-0"
-            >
-              <Trash className="w-3 h-3" />
-            </Button>
-          )}
         </div>
 
         <div className="flex-1 overflow-y-auto">
