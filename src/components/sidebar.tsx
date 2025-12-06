@@ -100,11 +100,6 @@ export function Sidebar() {
             <Clock className="w-4 h-4" />
             <h3 className="text-sm font-medium">
               History ({filteredHistory.length})
-              {filterCellIdentifier && filteredHistory.length < history.length && (
-                <span className="text-xs text-muted-foreground ml-1">
-                  / {history.length} total
-                </span>
-              )}
             </h3>
           </div>
           {filteredHistory.length > 0 && (
