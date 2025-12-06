@@ -32,10 +32,11 @@ LAYOUT:
 - Spacing and proportions
 
 VISUAL STYLE:
-- They should resemble rough sketches of the final UI, but done with solid lines 
+- They should resemble rough sketches of the final UI 
 - You may use shades or squiggles or any other typical sketching methods to make it look digitally hand-drawn.
 - You may add details to the component that makes sense.
 - Each generated variant needs to explore a different layout and different style to the original seed component. It is important that you generate very different layouts keeping the same core functionalitity. 
+- It is important that your description needs to be creative.
 
 FUNCTIONAL ADDITIONS:
 - What useful elements could enhance this UI?
@@ -43,6 +44,8 @@ FUNCTIONAL ADDITIONS:
 - Mobile-friendly vs desktop-optimized approaches
 
 Keep the tldraw wireframe hand drawn aesthetic. Each description should be 3-5 sentences with enough detail to recreate the design.
+
+The seed image may contain more context about what the initial seed sketch is about by drawing arrows and writing context around it. It is for you to generate better outputs
 
 OUTPUT FORMAT:
 - seed_context: What the seed image depicts in terms of functionality and what the seed image is. Do not go into detail into the seed image's layout.
@@ -65,7 +68,7 @@ async function generateImageVariant(
   index: number
 ): Promise<string> {
   // Generate a tldraw-style variant
-  const imagePrompt = `Generate an image in tldraw drawing style. Content: ${seedContext}. Layout: ${variantDescription}. Style: Match the tldraw digital drawing aesthetic shown in the seed image - simple vector-like drawings with clean lines, basic shapes, and minimal colors. Maintain the same drawing style and visual language while applying the new layout.`;
+  const imagePrompt = `Generate an image in tldraw drawing style. Content: ${seedContext}. Layout: ${variantDescription}. Style: Match the tldraw digital drawing aesthetic shown in the seed image. Maintain the same drawing style and visual language while applying the new layout.`;
 
   console.log('[generate-image-variant] Prompt:', imagePrompt);
 
@@ -135,7 +138,7 @@ export async function POST(request: NextRequest) {
     const stage1Start = Date.now();
 
     const descriptionResponse = await generateObject({
-      model: gateway('anthropic/claude-sonnet-4-5'),
+      model: gateway('anthropic/claude-opus-4.5'),
       schema: variantDescriptionsSchema,
       system: DESCRIPTION_SYSTEM,
       messages: [

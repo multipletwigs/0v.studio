@@ -12,6 +12,7 @@ import {
   useRelevantStyles,
   TldrawUiButton,
   TldrawUiButtonIcon,
+  DefaultSizeStyle,
 } from 'tldraw';
 import 'tldraw/tldraw.css';
 import { VariantProvider } from '@/lib/hooks/use-variant-generation';
@@ -31,6 +32,8 @@ function GridInitializer() {
 
   useEffect(() => {
     initializeGrid(editor);
+    // Set default draw size to small
+    editor.setStyleForNextShapes(DefaultSizeStyle, 's');
   }, [editor, initializeGrid, currentPageId]);
 
   return null;
