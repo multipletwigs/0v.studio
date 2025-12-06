@@ -1,6 +1,6 @@
 'use client';
 
-import { Cursor, PencilSimple, Eraser, ArrowCounterClockwise, ArrowClockwise, Camera, Square, Circle, Triangle } from '@phosphor-icons/react';
+import { Cursor, PencilSimple, Eraser, ArrowCounterClockwise, ArrowClockwise, Camera, Square, Circle, Triangle, TextT } from '@phosphor-icons/react';
 import { Tldraw, useEditor, useValue, createShapeId } from 'tldraw';
 import 'tldraw/tldraw.css';
 import { VariantProvider } from '@/lib/hooks/use-variant-generation';
@@ -13,7 +13,22 @@ import { downloadCanvas } from '@/lib/utils/export-canvas';
 function CanvasInner() {
   return (
     <div className="relative w-full h-screen">
-      <Tldraw hideUi>
+      <Tldraw
+        components={{
+          ContextMenu: null,
+          HelpMenu: null,
+          ZoomMenu: null,
+          MainMenu: null,
+          Toolbar: null,
+          PageMenu: null,
+          NavigationPanel: null,
+          DebugPanel: null,
+          DebugMenu: null,
+          SharePanel: null,
+          MenuPanel: null,
+          TopPanel: null,
+        }}
+      >
         <CanvasUI />
       </Tldraw>
     </div>
@@ -30,6 +45,7 @@ function Toolbar() {
     { id: 'select', icon: Cursor, label: 'Select' },
     { id: 'draw', icon: PencilSimple, label: 'Draw' },
     { id: 'eraser', icon: Eraser, label: 'Erase' },
+    { id: 'text', icon: TextT, label: 'Text' },
   ];
 
   const shapes = [
@@ -43,7 +59,7 @@ function Toolbar() {
     const centerX = viewport.x + viewport.width / 2;
     const centerY = viewport.y + viewport.height / 2;
     const shapeId = createShapeId();
-    
+
     editor.createShape({
       id: shapeId,
       type,
@@ -72,8 +88,8 @@ function Toolbar() {
           type="button"
           onClick={() => editor.setCurrentTool(tool.id)}
           className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${currentToolId === tool.id
-              ? 'bg-blue-100 text-blue-600'
-              : 'hover:bg-gray-100'
+            ? 'bg-blue-100 text-blue-600'
+            : 'hover:bg-gray-100'
             }`}
           title={tool.label}
         >
