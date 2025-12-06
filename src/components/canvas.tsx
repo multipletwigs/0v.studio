@@ -42,7 +42,7 @@ function CanvasInner() {
       <Sidebar />
       <div className="h-full w-full">
         <Tldraw
-          persistenceKey='j'
+          persistenceKey='a'
           shapeUtils={[GridCellShapeUtil, VariantImageShapeUtil]}
           components={{
             ContextMenu: null,

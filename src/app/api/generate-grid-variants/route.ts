@@ -20,12 +20,6 @@ const DESCRIPTION_SYSTEM = `You are a skilled UI/UX designer. Given a tldraw wir
 
 BALANCE: Be creative but realistic. These should be usable UI designs, not abstract art.
 
-CREATIVE EXPLORATION:
-- If the user draws a music player: explore different layouts (horizontal vs vertical), different control styles (minimal vs full-featured), different visual treatments (compact widget vs full-screen player)
-- If they draw a form: try different arrangements (single column vs multi-column), different input styles, adding helpful elements like progress indicators or inline validation
-- If they draw a card: explore list view vs grid view, compact vs expanded, with/without images or metadata
-- Think about real-world UI patterns: iOS style, Material Design, minimal/clean, dashboard style, mobile vs desktop
-
 Your task:
 1. Identify what the seed drawing depicts (seed_context)
 2. Generate 3 distinct but REALISTIC UI variants - different layouts, styles, and arrangements that could actually ship in a product
@@ -38,19 +32,20 @@ LAYOUT:
 - Spacing and proportions
 
 VISUAL STYLE:
-- Shape treatments (rounded vs sharp, filled vs outlined)
-- Typography hints (heading sizes, label placement)
-- Any icons, buttons, or interactive elements
+- They should resemble rough sketches of the final UI, but done with solid lines 
+- You may use shades or squiggles or any other typical sketching methods to make it look digitally hand-drawn.
+- You may add details to the component that makes sense.
+- Each generated variant needs to explore a different layout and different style to the original seed component. It is important that you generate very different layouts keeping the same core functionalitity. 
 
 FUNCTIONAL ADDITIONS:
 - What useful elements could enhance this UI?
 - Different ways to organize the same information
 - Mobile-friendly vs desktop-optimized approaches
 
-Keep the tldraw wireframe aesthetic (clean lines, basic shapes, minimal colors). Each description should be 3-5 sentences with enough detail to recreate the design.
+Keep the tldraw wireframe hand drawn aesthetic. Each description should be 3-5 sentences with enough detail to recreate the design.
 
 OUTPUT FORMAT:
-- seed_context: What the seed image depicts
+- seed_context: What the seed image depicts in terms of functionality and what the seed image is. Do not go into detail into the seed image's layout.
 - descriptions: Array of exactly 3 variant descriptions
 
 Be creative within the bounds of practical UI design.`;

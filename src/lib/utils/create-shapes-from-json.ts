@@ -1,4 +1,4 @@
-import type { Editor } from 'tldraw';
+import type { Editor, TLShapeId } from 'tldraw';
 import { createShapeId, toRichText } from 'tldraw';
 
 export interface ShapeDefinition {
@@ -18,11 +18,11 @@ export interface ShapesJSON {
  * Creates tldraw shapes from a JSON definition
  */
 export function createShapesFromJSON(editor: Editor, json: ShapesJSON): string[] {
-  const createdShapeIds: string[] = [];
+  const createdShapeIds: TLShapeId[] = [];
 
   for (const shapeDef of json.shapes) {
-    const shapeId = shapeDef.id || createShapeId();
-    
+    const shapeId = shapeDef.id as TLShapeId || createShapeId();
+
     // Transform props: convert text -> richText for geo shapes
     const transformedProps = { ...shapeDef.props } as Record<string, unknown>;
     if ('text' in transformedProps && typeof transformedProps.text === 'string') {

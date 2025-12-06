@@ -563,9 +563,9 @@ export class GridCellShapeUtil extends BaseBoxShapeUtil<GridCellShape> {
     return <rect width={shape.props.w} height={shape.props.h} />;
   }
 
-  // Prevent deletion
-  canDelete() {
-    return false;
+  // Only seed cell cannot be deleted
+  override canDelete(shape: GridCellShape) {
+    return shape.props.cellType !== 'seed';
   }
 
   // Allow editing (unlocking to move/resize)
