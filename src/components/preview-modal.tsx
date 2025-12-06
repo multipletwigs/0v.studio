@@ -25,7 +25,7 @@ export function PreviewModal({ open, onOpenChange, previewUrl, chatUrl }: Previe
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
         className="max-h-[95vh] h-full flex flex-col p-6"
-        style={{ width: '80%' }}
+        style={{ minWidth: '80vw' }}
       >
         <DialogHeader>
           <DialogTitle>Generated UI Preview</DialogTitle>
