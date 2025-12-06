@@ -34,9 +34,7 @@ export async function POST(request: NextRequest) {
     });
     console.log('[generate-ui] Image uploaded to Vercel Blob:', url);
 
-    // Create v0 client server-side with API key from environment
-    // Prefer V0_API_KEY (server-side only) over NEXT_PUBLIC_V0_API_KEY
-    const apiKey = process.env.V0_API_KEY || process.env.NEXT_PUBLIC_V0_API_KEY;
+    const apiKey = process.env.V0_API_KEY
     
     if (!apiKey) {
       return NextResponse.json(
@@ -57,8 +55,9 @@ export async function POST(request: NextRequest) {
       message: `
         You are an expert design engineer, who builds the most beautiful UI in the world. 
         You will receive a mid-fi mockup of a component. You will need to build a complete version of the UI, extending from the mockup.
-        Generate clean, production-ready code UI with Tailwind CSS and shadcn/ui components.
         Its UI should be production ready, super polished, and can be competing with any other app in the market.
+        It should also be realistic and functional.
+        Generate clean, production-ready code UI with Tailwind CSS and shadcn/ui components.
       `,
       responseMode: 'sync',
       attachments: [

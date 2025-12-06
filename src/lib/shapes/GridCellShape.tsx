@@ -278,25 +278,55 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
                 </Button>
             );
           })()}
-          {cellType === 'variant' && (
-          <Button
-          type="button"
-          variant="outline"
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
+          {cellType === 'variant' && (() => {
             const cellIdentifier = shape.props.cellType === 'variant' 
               ? `Variant ${shape.props.cellIndex}` 
               : `Seed`;
-            console.log('[GridCell] Emitting open-history event:', cellIdentifier);
-            eventEmitter.emit('open-history', cellIdentifier);
-          }}
-        >
-          <Clock size={16} weight="regular" />
-        </Button>
-        )}
+            const cellHistory = history.filter(
+              (item) => item.cellIdentifier === cellIdentifier
+            );
+            const historyCount = cellHistory.length;
+            
+            return (
+              <div style={{ position: 'relative' }}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    console.log('[GridCell] Emitting open-history event:', cellIdentifier);
+                    eventEmitter.emit('open-history', cellIdentifier);
+                  }}
+                >
+                  <Clock size={16} weight="regular" />
+                </Button>
+                {historyCount > 0 && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: '-6px',
+                      right: '-6px',
+                      backgroundColor: '#16a34a',
+                      color: 'white',
+                      borderRadius: '50%',
+                      width: '18px',
+                      height: '18px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+                    }}
+                  >
+                    {historyCount > 9 ? '9+' : historyCount}
+                  </span>
+                )}
+              </div>
+            );
+          })()}
         </div>
-
       {/* Border element - separate so only it animates */}
       <div
         style={{
