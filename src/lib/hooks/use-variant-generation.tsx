@@ -113,10 +113,10 @@ export function VariantProvider({ children }: { children: ReactNode }) {
         const { imageBase64, svgString } = await exportSelection(editor);
 
         // Serialize existing shapes for context
-        const existingShapes: SerializedShape[] = selectedIds.map((id) => {
+        const existingShapes: SerializedShape[] = selectedIds.reduce<SerializedShape[]>((acc, id) => {
           const shape = editor.getShape(id);
-          if (!shape) return null;
-          return {
+          if (!shape) return acc;
+          acc.push({
             id: shape.id,
             type: shape.type,
             x: shape.x,
@@ -124,8 +124,9 @@ export function VariantProvider({ children }: { children: ReactNode }) {
             rotation: shape.rotation,
             opacity: shape.opacity,
             props: shape.props as Record<string, unknown>,
-          };
-        }).filter((s): s is SerializedShape => s !== null);
+          });
+          return acc;
+        }, []);
 
         const response = await fetch('/api/generate-variants', {
           method: 'POST',

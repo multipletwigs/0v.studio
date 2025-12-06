@@ -8,30 +8,60 @@ const gateway = createGateway({
 
 // Stage 1: Description generation schema
 const variantDescriptionsSchema = z.object({
-  seed_context: z.string().describe('A brief description of what the seed image depicts'),
+  seed_context: z.string().describe('A detailed description of what the seed image depicts, including its content, elements, purpose, and visual style'),
   descriptions: z
     .array(z.string())
     .length(3)
-    .describe('Three different layout variant descriptions'),
+    .describe('An array of exactly 3 different detailed layout variant descriptions. Each description should be a separate string element in the array, not a single combined string.'),
 });
 
-const DESCRIPTION_SYSTEM = `You are a creative design analyst. Given a tldraw drawing (the "seed"), analyze it and generate 3 different layout variant ideas.
+const DESCRIPTION_SYSTEM = `You are a creative UI/UX design analyst specializing in digital wireframes and mockups. Given a tldraw drawing (the "seed"), analyze it deeply and generate 3 highly detailed and creative layout variant descriptions.
 
-CONTEXT: The seed image is a drawing created in tldraw (a digital drawing/whiteboard tool). All variants should maintain the tldraw drawing style.
+CONTEXT: The seed image is a drawing created in tldraw (a digital drawing/whiteboard tool). All variants should maintain the tldraw drawing style - simple vector-like drawings with clean lines, basic shapes (rectangles, circles, lines), and minimal colors typical of wireframe/mockup aesthetics.
 
 Your task:
-1. Identify what the seed drawing depicts (seed_context) - describe the content, elements, and purpose
+1. Identify what the seed drawing depicts (seed_context) - describe the content, elements, purpose, and visual style in detail
 2. Analyze what components or functionality might be missing that this type of element typically has
-3. Generate 3 creative layout variants that explore different arrangements AND potentially include additional typical components/functionality
+3. Generate 3 highly creative and distinct layout variants that explore different arrangements AND potentially include additional typical components/functionality
 
-Each variant description should:
-- Be detailed enough to recreate the concept with different layout/composition
-- Consider adding missing typical components (e.g., if it's a form, maybe add submit button; if it's a card, maybe add actions/metadata; if it's a navigation, maybe add search/icons)
-- Focus on how to rearrange, reposition, or restructure the elements
-- Explore new spatial arrangements while enhancing completeness
-- Be specific about positioning and relationships between elements
+Each variant description MUST be extremely detailed and include:
 
-Return exactly 3 creative variant descriptions that explore both layout changes and functional enhancements.`;
+LAYOUT & STRUCTURE:
+- Precise spatial arrangement (e.g., "navigation bar at top spanning full width", "3-column grid layout with 20px gaps", "sidebar on left taking 1/4 of width")
+- Exact positioning of elements (top/bottom/left/right/center, with relative sizing)
+- Hierarchy and visual flow (what catches attention first, reading order)
+- Spacing and padding details (tight, spacious, compact, airy)
+
+VISUAL ELEMENTS:
+- All shapes present (rectangles, circles, lines, text blocks, icons)
+- Size and proportions of each element relative to others
+- Visual style (outlined boxes, filled shapes, line weights, rounded corners vs sharp corners)
+- Text elements (headings, body text, labels, captions) and their relative sizing
+- Any icons, buttons, or interactive elements with their appearance
+
+CREATIVE VARIATIONS:
+- Completely different spatial arrangements from the seed (horizontal → vertical, grid → stack, etc.)
+- Additional missing typical components that would enhance functionality (if it's a form: add submit button, validation messages; if it's a card: add actions, timestamps, avatars; if it's a navigation: add search, notifications, user menu)
+- Experimental layouts that push creative boundaries while staying practical
+- Different visual hierarchies and emphasis
+
+COLOR & STYLE NOTES:
+- Mention any color blocks, shading, or emphasis areas
+- Note the drawing style specifics (hand-drawn feel, geometric precision, wireframe aesthetic)
+- Background treatment (transparent background, sections, dividers)
+
+FUNCTIONAL ENHANCEMENTS:
+- What new interactive elements are added (buttons, dropdowns, toggles, sliders)
+- What information hierarchy changes improve usability
+- How the variant solves potential UX issues from the seed
+
+Each description should be 4-6 sentences minimum, rich with visual and spatial details that an image generation model can use to accurately recreate the design. Be specific about EVERYTHING - shapes, sizes, positions, colors, text, spacing, and relationships between elements.
+
+OUTPUT FORMAT:
+- seed_context: A single detailed string describing the seed image
+- descriptions: An array containing exactly 3 separate string descriptions (NOT a single combined string, but 3 individual array elements)
+
+Return exactly 3 creative variant descriptions that are visually distinct and functionally enhanced.`;
 
 interface GridVariantsRequest {
   image: string;
@@ -121,7 +151,7 @@ export async function POST(request: NextRequest) {
             },
             {
               type: 'text',
-              text: 'Analyze this seed image and generate 3 creative layout variant descriptions. Background must be white.',
+              text: 'Analyze this seed image and generate exactly 3 highly detailed and creative layout variant descriptions. Each description should be a separate item in the descriptions array. All backgrounds must be transparent.',
             },
           ],
         },

@@ -15,6 +15,7 @@ import { Sidebar } from './sidebar';
 import { downloadCanvas } from '@/lib/utils/export-canvas';
 import { GridCellShapeUtil } from '@/lib/shapes/GridCellShape';
 import { VariantImageShapeUtil } from '@/lib/shapes/VariantImageShape';
+import { PendingVariantsOverlay } from './pending-variants-overlay';
 
 function GridInitializer() {
   const editor = useEditor();
@@ -205,6 +206,7 @@ function CanvasUI() {
       </div>
       <GenerateUIButton />
       <VariantControls />
+      <PendingVariantsOverlay />
     </>
   );
 }
