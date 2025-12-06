@@ -6,7 +6,7 @@ import { put } from '@vercel/blob';
 import { useUIGenerationHistory } from '@/lib/stores/ui-generation-history';
 import { PreviewModal } from '@/components/preview-modal';
 import { toast } from 'sonner';
-import { Clock } from '@phosphor-icons/react';
+import { Clock, ArrowClockwise } from '@phosphor-icons/react';
 import { eventEmitter } from '@/lib/utils/event-emitter';
 
 // Type definition
@@ -60,6 +60,7 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
 
 
   const addToHistory = useUIGenerationHistory((state) => state.addToHistory);
+  const history = useUIGenerationHistory((state) => state.history);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGeneratingUI, setIsGeneratingUI] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -175,10 +176,10 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
       const chat = await client.chats.create({
         message: 'Build a React TypeScript component based on this mockup',
         system: `
-          You are an expert React developer who builds the most beautiful UI in the world. 
-          You will receive a mockup of a component. You will need to build a complete version of it, following the mockup.
-          Generate clean, production-ready code and UI with Tailwind CSS and shadcn/ui components.
-          It should be production ready, can be competing with any other app in the market.
+          You are an expert design engineer, who builds the most beautiful UI in the world. 
+          You will receive a mid-fi mockup of a component. You will need to build a complete version of the UI, extending from the mockup.
+          Generate clean, production-ready code UI with Tailwind CSS and shadcn/ui components.
+          Its UI should be production ready, super polished, and can be competing with any other app in the market.
         `,
         responseMode: 'sync',
         attachments: [
@@ -332,48 +333,109 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
           gap: '8px',
           zIndex: 1000,
         }}>
-          {cellType === 'variant' && hasAcceptedVariant && !isGeneratingUI && (
-          <button
-            type="button"
-            onPointerDown={handleGenerateUIClick}
-            disabled={isGeneratingUI}
-            style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
-              backgroundSize: '200% 200%',
-              animation: 'shimmer 3s ease infinite, glow 2s ease-in-out infinite',
-              color: 'white',
-              border: 'none',
-              borderRadius: '12px',
-              padding: '10px 20px',
-              fontSize: '14px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              boxShadow: '0 8px 24px rgba(139, 92, 246, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15)',
-              pointerEvents: 'all',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              letterSpacing: '0.5px',
-              transform: 'translateZ(0)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = '0 12px 32px rgba(139, 92, 246, 0.6), 0 6px 16px rgba(0, 0, 0, 0.2)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = '0 8px 24px rgba(139, 92, 246, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15)';
-            }}
-          >
-            <span>
-              <span style={{
-                fontSize: '14px',
-                display: 'inline-block',
-                marginRight: '6px',
-                animation: 'sparkle 2s ease-in-out infinite',
-              }}>✨</span> 
-              Generate UI
-            </span>
-          </button>
-          )}
+          {cellType === 'variant' && hasAcceptedVariant && !isGeneratingUI && (() => {
+            const cellIdentifier = shape.props.cellType === 'variant' 
+              ? `Variant ${shape.props.cellIndex}` 
+              : `Seed`;
+            const cellHistory = history.filter(
+              (item) => item.cellIdentifier === cellIdentifier
+            );
+            // Hide Generate UI button if there's more than one history item
+            if (cellHistory.length > 1) {
+              return null;
+            }
+            return (
+              <button
+                type="button"
+                onPointerDown={handleGenerateUIClick}
+                disabled={isGeneratingUI}
+                style={{
+                  position: 'absolute',
+                  top: '-48px',
+                  right: '0',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
+                  backgroundSize: '200% 200%',
+                  animation: 'shimmer 3s ease infinite, glow 2s ease-in-out infinite',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: '10px 20px',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 24px rgba(139, 92, 246, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15)',
+                  pointerEvents: 'all',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  letterSpacing: '0.5px',
+                  transform: 'translateZ(0)',
+                  zIndex: 1000,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
+                  e.currentTarget.style.boxShadow = '0 12px 32px rgba(139, 92, 246, 0.6), 0 6px 16px rgba(0, 0, 0, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(139, 92, 246, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15)';
+                }}
+              >
+                <span>
+                  <span style={{
+                    fontSize: '14px',
+                    display: 'inline-block',
+                    marginRight: '6px',
+                    animation: 'sparkle 2s ease-in-out infinite',
+                  }}>✨</span> 
+                  Generate UI
+                </span>
+              </button>
+            );
+          })()}
+          {/* Refresh button - show if cellIdentifier has more than one history item */}
+          {cellType === 'variant' && hasAcceptedVariant && (() => {
+            const cellIdentifier = shape.props.cellType === 'variant' 
+              ? `Variant ${shape.props.cellIndex}` 
+              : `Seed`;
+            const cellHistory = history.filter(
+              (item) => item.cellIdentifier === cellIdentifier
+            );
+            return cellHistory.length > 1 ? (
+              <button
+                type="button"
+                onPointerDown={handleGenerateUIClick}
+                disabled={isGeneratingUI}
+                style={{
+                  background: 'white',
+                  color: '#1f2937',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '12px',
+                  padding: '10px 16px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                  pointerEvents: 'all',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease',
+                  zIndex: 1000,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f9fafb';
+                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'white';
+                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+                }}
+              >
+                <ArrowClockwise size={16} weight="regular" />
+              </button>
+            ) : null;
+          })()}
           <button
             type="button"
             onPointerDown={(e) => {
@@ -411,7 +473,6 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
             }}
           >
             <Clock size={16} weight="regular" />
-            <span>History</span>
           </button>
         </div>
 
