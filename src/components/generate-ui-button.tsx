@@ -77,7 +77,7 @@ export function GenerateUIButton() {
 
       // Create a chat with v0 SDK using the image URL
       console.log('[generate-ui] Creating v0 chat with image...');
-      
+
       const chat = await client.chats.create({
         message: 'Build a React TypeScript app based on this design',
         system: `
@@ -114,7 +114,7 @@ export function GenerateUIButton() {
 
       // Wait for preview URL to be available
       let previewUrl = chatDetail.latestVersion?.demoUrl || '';
-      
+
       if (!previewUrl) {
         // Poll for preview URL if not immediately available
         let attempts = 0;
@@ -122,18 +122,18 @@ export function GenerateUIButton() {
         const delayMs = 2000;
 
         console.log('[generate-ui] Preview URL not immediately available, polling...');
-        
+
         while (attempts < maxAttempts && !previewUrl) {
           await new Promise((resolve) => setTimeout(resolve, delayMs));
           attempts++;
-          
+
           try {
             const updatedChat = await client.chats.getById({ chatId: chatDetail.id });
             console.log(`[generate-ui] Poll attempt ${attempts}:`, {
               hasLatestVersion: !!updatedChat.latestVersion,
               demoUrl: updatedChat.latestVersion?.demoUrl,
             });
-            
+
             if (updatedChat.latestVersion?.demoUrl) {
               previewUrl = updatedChat.latestVersion.demoUrl;
               console.log('[generate-ui] Preview URL found after polling');
@@ -155,7 +155,7 @@ export function GenerateUIButton() {
 
       setPreviewUrl(previewUrl);
       setChatUrl(chatDetail.webUrl || '');
-      
+
       // Save to history (with empty files array since we don't need code)
       addToHistory({
         files: [],
@@ -171,7 +171,7 @@ export function GenerateUIButton() {
         previewUrl,
         chatDetailKeys: Object.keys(chatDetail),
       });
-      
+
       setIsModalOpen(true);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate UI';
@@ -187,49 +187,48 @@ export function GenerateUIButton() {
 
   return (
     <>
-      <div
-        className="fixed z-50"
-        style={{
-          left: selectionData.screenX,
-          top: selectionData.screenY,
-          transform: 'translateY(-50%)',
-        }}
-      >
-        <Button
-          type="button"
-          size="sm"
-          onClick={handleGenerate}
-          disabled={isGenerating}
-          className="shadow-lg"
-        >
-          {isGenerating ? (
-            <>
-              <Sparkle className="w-4 h-4 animate-spin" weight="fill" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Sparkle className="w-4 h-4" weight="fill" />
-              Generate UI
-            </>
-          )}
-        </Button>
-      </div>
-
-      {error && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
-          <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2">
-            <span className="text-sm text-red-600">{error}</span>
-          </div>
-        </div>
-      )}
-
-      <PreviewModal
-        open={isModalOpen}
-        onOpenChange={setIsModalOpen}
-        previewUrl={previewUrl}
-        chatUrl={chatUrl}
-      />
+      {/* <div */}
+      {/*   className="fixed z-50" */}
+      {/*   style={{ */}
+      {/*     left: selectionData.screenX, */}
+      {/*     top: selectionData.screenY, */}
+      {/*     transform: 'translateY(-50%)', */}
+      {/*   }} */}
+      {/* > */}
+      {/*   <Button */}
+      {/*     type="button" */}
+      {/*     size="sm" */}
+      {/*     disabled={isGenerating} */}
+      {/*     className="shadow-lg" */}
+      {/*   > */}
+      {/*     {isGenerating ? ( */}
+      {/*       <> */}
+      {/*         <Sparkle className="w-4 h-4 animate-spin" weight="fill" /> */}
+      {/*         Generating... */}
+      {/*       </> */}
+      {/*     ) : ( */}
+      {/*       <> */}
+      {/*         <Sparkle className="w-4 h-4" weight="fill" /> */}
+      {/*         Generate UI */}
+      {/*       </> */}
+      {/*     )} */}
+      {/*   </Button> */}
+      {/* </div> */}
+      {/**/}
+      {/* {error && ( */}
+      {/*   <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50"> */}
+      {/*     <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2"> */}
+      {/*       <span className="text-sm text-red-600">{error}</span> */}
+      {/*     </div> */}
+      {/*   </div> */}
+      {/* )} */}
+      {/**/}
+      {/* <PreviewModal */}
+      {/*   open={isModalOpen} */}
+      {/*   onOpenChange={setIsModalOpen} */}
+      {/*   previewUrl={previewUrl} */}
+      {/*   chatUrl={chatUrl} */}
+      {/* /> */}
     </>
   );
 }

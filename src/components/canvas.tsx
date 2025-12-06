@@ -7,15 +7,11 @@ import 'tldraw/tldraw.css';
 import { VariantProvider } from '@/lib/hooks/use-variant-generation';
 import { GridProvider, useGridCanvas } from '@/lib/hooks/use-grid-canvas';
 import { VariantControls } from './variant-controls';
-import { GenerateVariantsButton } from './generate-variants-button';
-import { InsertShapesButton } from './insert-shapes-button';
-import { ExportShapesButton } from './export-shapes-button';
 import { GenerateUIButton } from './generate-ui-button';
 import { Sidebar } from './sidebar';
 import { downloadCanvas } from '@/lib/utils/export-canvas';
 import { GridCellShapeUtil } from '@/lib/shapes/GridCellShape';
 import { VariantImageShapeUtil } from '@/lib/shapes/VariantImageShape';
-import { PendingVariantsOverlay } from './pending-variants-overlay';
 
 function GridInitializer() {
   const editor = useEditor();
@@ -34,6 +30,7 @@ function CanvasInner() {
       <Sidebar />
       <div className="flex-1 relative">
         <Tldraw
+          persistenceKey='local'
           shapeUtils={[GridCellShapeUtil, VariantImageShapeUtil]}
           components={{
             ContextMenu: null,
@@ -50,7 +47,7 @@ function CanvasInner() {
             TopPanel: null,
           }}
         >
-        <GridInitializer />
+          <GridInitializer />
           <CanvasUI />
         </Tldraw>
       </div>
@@ -206,7 +203,6 @@ function CanvasUI() {
       </div>
       <GenerateUIButton />
       <VariantControls />
-      <PendingVariantsOverlay />
     </>
   );
 }

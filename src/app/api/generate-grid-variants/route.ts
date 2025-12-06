@@ -48,7 +48,7 @@ CREATIVE VARIATIONS:
 COLOR & STYLE NOTES:
 - Mention any color blocks, shading, or emphasis areas
 - Note the drawing style specifics (hand-drawn feel, geometric precision, wireframe aesthetic)
-- Background treatment (transparent background, sections, dividers)
+- Background treatment (white background, sections, dividers)
 
 FUNCTIONAL ENHANCEMENTS:
 - What new interactive elements are added (buttons, dropdowns, toggles, sliders)
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
             },
             {
               type: 'text',
-              text: 'Analyze this seed image and generate exactly 3 highly detailed and creative layout variant descriptions. Each description should be a separate item in the descriptions array. All backgrounds must be transparent.',
+              text: 'Analyze this seed image and generate exactly 3 highly detailed and creative layout variant descriptions. Each description should be a separate item in the descriptions array. All backgrounds must be white.',
             },
           ],
         },

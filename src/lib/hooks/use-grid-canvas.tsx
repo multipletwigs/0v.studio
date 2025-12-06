@@ -14,11 +14,6 @@ export interface GridCell {
   isGenerating?: boolean;
 }
 
-export interface PendingVariant {
-  cellId: string;
-  imageUrl: string;
-  description: string;
-}
 
 interface GridState {
   cells: GridCell[];
@@ -29,16 +24,12 @@ interface GridState {
   gap: number;
   isGenerating: boolean;
   initialized: boolean;
-  pendingVariants: PendingVariant[];
 }
 
 type GridAction =
   | { type: 'INIT_GRID'; cells: GridCell[] }
   | { type: 'SET_GRID_SIZE'; columns: number; rows: number }
   | { type: 'START_GENERATION' }
-  | { type: 'SET_PENDING_VARIANTS'; variants: PendingVariant[] }
-  | { type: 'ACCEPT_VARIANT'; cellId: string; imageUrl: string; imageShapeId: TLShapeId }
-  | { type: 'REJECT_VARIANT'; cellId: string }
   | { type: 'GENERATION_COMPLETE' }
   | { type: 'GENERATION_ERROR' }
   | { type: 'CLEAR_VARIANT'; cellId: string }
@@ -90,7 +81,6 @@ const initialState: GridState = {
   gap: GAP,
   isGenerating: false,
   initialized: false,
-  pendingVariants: [],
 };
 
 function gridReducer(state: GridState, action: GridAction): GridState {
@@ -116,29 +106,6 @@ function gridReducer(state: GridState, action: GridAction): GridState {
         cells: state.cells.map((cell) =>
           cell.type === 'variant' ? { ...cell, isGenerating: true } : cell
         ),
-      };
-
-    case 'SET_PENDING_VARIANTS':
-      return {
-        ...state,
-        pendingVariants: action.variants,
-      };
-
-    case 'ACCEPT_VARIANT':
-      return {
-        ...state,
-        cells: state.cells.map((cell) =>
-          cell.id === action.cellId
-            ? { ...cell, imageUrl: action.imageUrl, imageShapeId: action.imageShapeId }
-            : cell
-        ),
-        pendingVariants: state.pendingVariants.filter((v) => v.cellId !== action.cellId),
-      };
-
-    case 'REJECT_VARIANT':
-      return {
-        ...state,
-        pendingVariants: state.pendingVariants.filter((v) => v.cellId !== action.cellId),
       };
 
     case 'GENERATION_COMPLETE':
@@ -181,8 +148,6 @@ interface GridContextValue {
   initializeGrid: (editor: Editor) => void;
   createNewPage: (editor: Editor) => void;
   generateVariants: (editor: Editor) => Promise<void>;
-  acceptVariant: (cellId: string, editor: Editor) => void;
-  rejectVariant: (cellId: string) => void;
   clearVariant: (cellId: string, editor: Editor) => void;
   clearAllVariants: (editor: Editor) => void;
 }
@@ -350,20 +315,29 @@ export function GridProvider({ children }: { children: ReactNode }) {
 
         const data = await response.json();
 
-        // Store variants as pending for user approval
-        const pendingVariants: PendingVariant[] = [];
+        // Create variant images immediately as pending shapes
         for (let i = 0; i < data.variants.length && i < variantCells.length; i++) {
           const variant = data.variants[i];
           const cell = variantCells[i];
+          const padding = 20;
 
-          pendingVariants.push({
-            cellId: cell.id,
-            imageUrl: variant.imageUrl,
-            description: variant.description,
+          const imageShapeId = createShapeId();
+          editor.createShape({
+            id: imageShapeId,
+            type: 'variant-image',
+            x: cell.bounds.x + padding,
+            y: cell.bounds.y + padding + 40,
+            props: {
+              w: cell.bounds.w - padding * 2,
+              h: cell.bounds.h - padding * 2 - 40,
+              imageUrl: variant.imageUrl,
+              variantIndex: cell.index,
+              description: variant.description,
+              pending: true,
+            },
           });
         }
 
-        dispatch({ type: 'SET_PENDING_VARIANTS', variants: pendingVariants });
         dispatch({ type: 'GENERATION_COMPLETE' });
       } catch (error) {
         console.error('Generation error:', error);
@@ -373,46 +347,6 @@ export function GridProvider({ children }: { children: ReactNode }) {
     },
     [state.cells, state.cellWidth, state.cellHeight]
   );
-
-  const acceptVariant = useCallback(
-    (cellId: string, editor: Editor) => {
-      const pendingVariant = state.pendingVariants.find((v) => v.cellId === cellId);
-      if (!pendingVariant) return;
-
-      const cell = state.cells.find((c) => c.id === cellId);
-      if (!cell) return;
-
-      // Create VariantImageShape
-      const imageShapeId = createShapeId();
-      const padding = 20;
-
-      editor.createShape({
-        id: imageShapeId,
-        type: 'variant-image',
-        x: cell.bounds.x + padding,
-        y: cell.bounds.y + padding + 40, // Extra padding for label
-        props: {
-          w: cell.bounds.w - padding * 2,
-          h: cell.bounds.h - padding * 2 - 40, // Adjust for label
-          imageUrl: pendingVariant.imageUrl,
-          variantIndex: cell.index,
-          description: pendingVariant.description,
-        },
-      });
-
-      dispatch({
-        type: 'ACCEPT_VARIANT',
-        cellId,
-        imageUrl: pendingVariant.imageUrl,
-        imageShapeId,
-      });
-    },
-    [state.pendingVariants, state.cells]
-  );
-
-  const rejectVariant = useCallback((cellId: string) => {
-    dispatch({ type: 'REJECT_VARIANT', cellId });
-  }, []);
 
   const clearVariant = useCallback(
     (cellId: string, editor: Editor) => {
@@ -447,8 +381,6 @@ export function GridProvider({ children }: { children: ReactNode }) {
         initializeGrid,
         createNewPage,
         generateVariants,
-        acceptVariant,
-        rejectVariant,
         clearVariant,
         clearAllVariants,
       }}
