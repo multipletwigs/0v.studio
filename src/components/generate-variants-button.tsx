@@ -2,7 +2,7 @@
 
 import { useEditor, useValue } from 'tldraw';
 import { useVariantGeneration } from '@/lib/hooks/use-variant-generation';
-import { Sparkle } from '@phosphor-icons/react';
+import { SparkleIcon } from '@phosphor-icons/react';
 
 export function GenerateVariantsButton() {
   const editor = useEditor();
@@ -34,7 +34,7 @@ export function GenerateVariantsButton() {
       onClick={handleClick}
       className="flex items-center gap-2 px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition-colors shadow-md"
     >
-      <Sparkle className="w-4 h-4" weight="fill" />
+      <SparkleIcon className="w-4 h-4" weight="fill" />
       Refine
     </button>
   );
