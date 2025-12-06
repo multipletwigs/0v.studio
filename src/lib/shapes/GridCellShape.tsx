@@ -266,16 +266,6 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
           zIndex: 1000,
         }}>
           {cellType === 'variant' && hasAcceptedVariant && (() => {
-            const cellIdentifier = shape.props.cellType === 'variant' 
-              ? `Variant ${shape.props.cellIndex}` 
-              : `Seed`;
-            const cellHistory = history.filter(
-              (item) => item.cellIdentifier === cellIdentifier
-            );
-            // Hide Generate UI button if there's more than one history item
-            if (cellHistory.length > 1) {
-              return null;
-            }
             return (
                 <Button
                   type="button"
@@ -289,8 +279,9 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
             );
           })()}
           {cellType === 'variant' && (
-          <button
+          <Button
           type="button"
+          variant="outline"
           onPointerDown={(e) => {
             e.stopPropagation();
             e.preventDefault();
@@ -300,33 +291,9 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
             console.log('[GridCell] Emitting open-history event:', cellIdentifier);
             eventEmitter.emit('open-history', cellIdentifier);
           }}
-          style={{
-            background: 'white',
-            color: '#1f2937',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            padding: '10px 16px',
-            fontSize: '14px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-            pointerEvents: 'all',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            transition: 'all 0.2s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#f9fafb';
-            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'white';
-            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
-          }}
         >
           <Clock size={16} weight="regular" />
-        </button>
+        </Button>
         )}
         </div>
 
