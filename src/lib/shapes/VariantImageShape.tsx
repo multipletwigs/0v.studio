@@ -109,35 +109,25 @@ function VariantImageComponent({ shape }: { shape: VariantImageShape }) {
     });
 
     try {
-      // Export this variant image
-      const imageResult = await editor.toImage([shape.id], {
-        format: 'png',
-        background: true,
-        padding: 20,
-      });
+      // Get the blob URL and context from meta (stored during variant generation)
+      const blobUrl = shape.meta.blobUrl as string | undefined;
+      const seedContext = shape.meta.seedContext as string | undefined;
+      const variantDescription = shape.props.description;
 
-      if (!imageResult?.blob) {
-        throw new Error('Failed to export image');
+      if (!blobUrl) {
+        throw new Error('No blob URL found for this variant');
       }
-
-      // Convert blob to base64
-      const imageBase64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const dataUrl = reader.result as string;
-          const base64 = dataUrl.replace(/^data:image\/png;base64,/, '');
-          resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(imageResult.blob);
-      });
 
       const response = await fetch('/api/generate-ui', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ imageBase64 }),
+        body: JSON.stringify({
+          imageUrl: blobUrl,
+          seedContext,
+          variantDescription,
+        }),
       });
 
       if (!response.ok) {

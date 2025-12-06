@@ -363,6 +363,8 @@ export function GridProvider({ children }: { children: ReactNode }) {
             },
             meta: {
               pending: true,
+              blobUrl: variant.imageUrl, // Store original blob URL for generate-ui
+              seedContext: data.seed_context, // Store seed context for generate-ui
             },
           });
         }

@@ -1,5 +1,5 @@
 /**
- * Converts near-white pixels to pure white for better mix-blend-mode: multiply
+ * Converts near-white pixels to #F9FAFB for better canvas background matching
  * Also trims whitespace from around image content
  */
 export async function trimImageWhitespace(
@@ -40,11 +40,11 @@ export async function trimImageWhitespace(
           const g = data[i + 1];
           const b = data[i + 2];
 
-          // Convert near-white pixels to pure white
+          // Convert near-white pixels to #F9FAFB (249, 250, 251)
           if (r > threshold && g > threshold && b > threshold) {
-            data[i] = 255;
-            data[i + 1] = 255;
-            data[i + 2] = 255;
+            data[i] = 249;
+            data[i + 1] = 250;
+            data[i + 2] = 251;
           } else {
             // Track bounds of non-white content
             minX = Math.min(minX, x);

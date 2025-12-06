@@ -1,38 +1,21 @@
 import { createClient, type ChatDetail } from 'v0-sdk';
 import { NextRequest, NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { imageBase64 } = body;
+    const { imageUrl, seedContext, variantDescription } = body;
 
-    if (!imageBase64) {
+    if (!imageUrl) {
       return NextResponse.json(
-        { success: false, error: 'No image data provided' },
+        { success: false, error: 'No image URL provided' },
         { status: 400 }
       );
     }
 
-    // Convert base64 to Buffer
-    const imageBuffer = Buffer.from(imageBase64, 'base64');
-
-    // Upload to Vercel Blob storage
-    console.log('[generate-ui] Uploading image to Vercel Blob...');
-    const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
-    
-    if (!blobToken) {
-      return NextResponse.json(
-        { success: false, error: 'Blob storage token not configured' },
-        { status: 500 }
-      );
-    }
-
-    const { url } = await put(`tldraw-${Date.now()}.png`, imageBuffer, {
-      access: 'public',
-      token: blobToken,
-    });
-    console.log('[generate-ui] Image uploaded to Vercel Blob:', url);
+    console.log('[generate-ui] Using image URL:', imageUrl);
+    console.log('[generate-ui] Seed context:', seedContext);
+    console.log('[generate-ui] Variant description:', variantDescription);
 
     const apiKey = process.env.V0_API_KEY
     
@@ -50,19 +33,29 @@ export async function POST(request: NextRequest) {
 
     console.log('[generate-ui] Creating v0 chat with image...');
 
+    // Build a rich prompt with context if available
+    let contextPrompt = '';
+    if (seedContext) {
+      contextPrompt += `\n\nCONTEXT: This is a UI mockup for: ${seedContext}`;
+    }
+    if (variantDescription) {
+      contextPrompt += `\n\nDESIGN DESCRIPTION: ${variantDescription}`;
+    }
+
     // Create a chat with v0 SDK using the image URL
     const chat = await client.chats.create({
       message: `
-        You are an expert design engineer, who builds the most beautiful UI in the world. 
+        You are an expert design engineer, who builds the most beautiful UI in the world.
         You will receive a mid-fi mockup of a component. You will need to build a complete version of the UI, extending from the mockup.
         Its UI should be production ready, super polished, and can be competing with any other app in the market.
         It should also be realistic and functional.
         Generate clean, production-ready code UI with Tailwind CSS and shadcn/ui components.
+        ${contextPrompt}
       `,
       responseMode: 'sync',
       attachments: [
         {
-          url,
+          url: imageUrl,
         },
       ],
       modelConfiguration: {
