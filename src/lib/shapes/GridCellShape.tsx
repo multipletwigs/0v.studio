@@ -58,6 +58,16 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
     [editor, shape.id, cellType]
   );
 
+  // Check if there are any variant images (pending or accepted) - hide grid when variants exist
+  const hasAnyVariants = useValue(
+    'hasAnyVariants',
+    () => {
+      const allShapes = editor.getCurrentPageShapes();
+      return allShapes.some((s) => s.type === 'variant-image');
+    },
+    [editor]
+  );
+
 
   const addToHistory = useUIGenerationHistory((state) => state.addToHistory);
   const history = useUIGenerationHistory((state) => state.history);
@@ -234,6 +244,8 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
         overflow: 'visible',
         pointerEvents: 'all',
         position: 'relative',
+        opacity: hasAnyVariants ? 0 : 1,
+        transition: 'opacity 0.2s ease',
       }}
     >
       <style>
@@ -278,15 +290,15 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
                 </Button>
             );
           })()}
-          {cellType === 'variant' && (() => {
-            const cellIdentifier = shape.props.cellType === 'variant' 
-              ? `Variant ${shape.props.cellIndex}` 
+          {cellType === 'variant' && !isGenerating && (() => {
+            const cellIdentifier = shape.props.cellType === 'variant'
+              ? `Variant ${shape.props.cellIndex}`
               : `Seed`;
             const cellHistory = history.filter(
               (item) => item.cellIdentifier === cellIdentifier
             );
             const historyCount = cellHistory.length;
-            
+
             return (
               <div style={{ position: 'relative' }}>
                 <Button

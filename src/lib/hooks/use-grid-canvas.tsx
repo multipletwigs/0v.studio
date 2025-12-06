@@ -367,20 +367,10 @@ export function GridProvider({ children }: { children: ReactNode }) {
           });
         }
 
-        // Update variant cell shapes to remove generating state
-        for (const cell of variantCells) {
-          const cellShapeId = variantCellShapeIds[cell.id];
-          console.log('[generateVariants] Updating grid cell', cell.id, 'shapeId:', cellShapeId);
-          if (cellShapeId) {
-            editor.updateShape({
-              id: cellShapeId,
-              type: 'grid-cell',
-              meta: { isGenerating: false },
-            });
-            // Verify the update
-            const updatedShape = editor.getShape(cellShapeId);
-            console.log('[generateVariants] After update, meta:', updatedShape?.meta);
-          }
+        // Delete variant grid cells now that images are placed
+        const cellShapeIdsToDelete = Object.values(variantCellShapeIds);
+        if (cellShapeIdsToDelete.length > 0) {
+          editor.deleteShapes(cellShapeIdsToDelete);
         }
 
         // Center camera on all content (seed + variants)
