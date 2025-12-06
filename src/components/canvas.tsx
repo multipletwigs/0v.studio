@@ -11,6 +11,8 @@ import { GenerateVariantsButton } from './generate-variants-button';
 import { InsertShapesButton } from './insert-shapes-button';
 import { ExportShapesButton } from './export-shapes-button';
 import { GridVariantImages } from './grid-variant-images';
+import { GenerateUIButton } from './generate-ui-button';
+import { Sidebar } from './sidebar';
 import { downloadCanvas } from '@/lib/utils/export-canvas';
 
 function GridInitializer() {
@@ -26,26 +28,29 @@ function GridInitializer() {
 
 function CanvasInner() {
   return (
-    <div className="relative w-full h-screen">
-      <Tldraw
-        components={{
-          ContextMenu: null,
-          HelpMenu: null,
-          ZoomMenu: null,
-          MainMenu: null,
-          Toolbar: null,
-          PageMenu: null,
-          NavigationPanel: null,
-          DebugPanel: null,
-          DebugMenu: null,
-          SharePanel: null,
-          MenuPanel: null,
-          TopPanel: null,
-        }}
-      >
+    <div className="flex h-screen w-full">
+      <Sidebar />
+      <div className="flex-1 relative">
+        <Tldraw
+          components={{
+            ContextMenu: null,
+            HelpMenu: null,
+            ZoomMenu: null,
+            MainMenu: null,
+            Toolbar: null,
+            PageMenu: null,
+            NavigationPanel: null,
+            DebugPanel: null,
+            DebugMenu: null,
+            SharePanel: null,
+            MenuPanel: null,
+            TopPanel: null,
+          }}
+        >
         <GridInitializer />
-        <CanvasUI />
-      </Tldraw>
+          <CanvasUI />
+        </Tldraw>
+      </div>
     </div>
   );
 }
@@ -197,6 +202,7 @@ function CanvasUI() {
         <GenerateGridButton />
       </div>
       <GridVariantImages />
+      <GenerateUIButton />
       <VariantControls />
     </>
   );
