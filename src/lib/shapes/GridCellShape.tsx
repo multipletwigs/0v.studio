@@ -6,7 +6,7 @@ import { put } from '@vercel/blob';
 import { useUIGenerationHistory } from '@/lib/stores/ui-generation-history';
 import { PreviewModal } from '@/components/preview-modal';
 import { toast } from 'sonner';
-import { Clock, ArrowClockwise } from '@phosphor-icons/react';
+import { Clock, ArrowClockwise, SpinnerIcon } from '@phosphor-icons/react';
 import { eventEmitter } from '@/lib/utils/event-emitter';
 
 // Type definition
@@ -174,8 +174,7 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
       console.log('[generate-ui] Creating v0 chat with image...');
 
       const chat = await client.chats.create({
-        message: 'Build a React TypeScript component based on this mockup',
-        system: `
+        message: `
           You are an expert design engineer, who builds the most beautiful UI in the world. 
           You will receive a mid-fi mockup of a component. You will need to build a complete version of the UI, extending from the mockup.
           Generate clean, production-ready code UI with Tailwind CSS and shadcn/ui components.
