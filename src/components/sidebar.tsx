@@ -67,7 +67,7 @@ export function Sidebar() {
       <button
         type="button"
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="fixed top-4 z-[60] w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-lg hover:bg-gray-100 transition-all duration-300"
+        className="fixed top-4 z-10 w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-lg hover:bg-gray-100 transition-all duration-300"
         style={{
           right: isCollapsed ? '16px' : '352px',
         }}
