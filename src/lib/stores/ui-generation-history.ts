@@ -14,6 +14,7 @@ export interface UIGenerationHistoryItem {
   chatId?: string;
   chatUrl?: string;
   chatDetail?: unknown; // Store full chatDetail for debugging
+  cellIdentifier?: string; // e.g., "Variant 1", "Variant 2", "Seed"
 }
 
 interface UIGenerationHistoryStore {

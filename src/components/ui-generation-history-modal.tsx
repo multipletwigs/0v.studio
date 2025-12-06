@@ -16,12 +16,18 @@ import { Trash } from '@phosphor-icons/react';
 interface UIGenerationHistoryModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  cellIdentifier?: string; // Optional filter by cellIdentifier
 }
 
-export function UIGenerationHistoryModal({ open, onOpenChange }: UIGenerationHistoryModalProps) {
+export function UIGenerationHistoryModal({ open, onOpenChange, cellIdentifier }: UIGenerationHistoryModalProps) {
   const { history, clearHistory, removeFromHistory } = useUIGenerationHistory();
   const [selectedItem, setSelectedItem] = useState<UIGenerationHistoryItem | null>(null);
   const [activeTab, setActiveTab] = useState<string>('');
+
+  // Filter history by cellIdentifier if provided
+  const filteredHistory = cellIdentifier 
+    ? history.filter((item) => item.cellIdentifier === cellIdentifier)
+    : history;
 
   const handleSelectItem = (item: UIGenerationHistoryItem) => {
     setSelectedItem(item);
@@ -48,12 +54,15 @@ export function UIGenerationHistoryModal({ open, onOpenChange }: UIGenerationHis
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle>UI Generation History</DialogTitle>
+              <DialogTitle>
+                UI Generation History
+                {cellIdentifier && <span className="text-muted-foreground ml-2">({cellIdentifier})</span>}
+              </DialogTitle>
               <DialogDescription>
                 View and manage your previously generated UI code.
               </DialogDescription>
             </div>
-            {history.length > 0 && (
+            {filteredHistory.length > 0 && (
               <Button
                 type="button"
                 variant="outline"
@@ -73,17 +82,19 @@ export function UIGenerationHistoryModal({ open, onOpenChange }: UIGenerationHis
           <div className="w-80 border rounded-lg overflow-hidden flex flex-col">
             <div className="px-4 py-2 border-b bg-muted/50">
               <h3 className="text-sm font-medium">
-                History ({history.length})
+                History ({filteredHistory.length})
               </h3>
             </div>
             <div className="flex-1 overflow-y-auto">
-              {history.length === 0 ? (
+              {filteredHistory.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground">
-                  <p className="text-sm">No generation history yet</p>
+                  <p className="text-sm">
+                    {cellIdentifier ? `No history for ${cellIdentifier}` : 'No generation history yet'}
+                  </p>
                 </div>
               ) : (
                 <div className="divide-y">
-                  {history.map((item) => (
+                  {filteredHistory.map((item) => (
                     <button
                       key={item.id}
                       type="button"

@@ -1,18 +1,44 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CaretLeft, CaretRight, Clock, Trash } from '@phosphor-icons/react';
 import dayjs from 'dayjs';
 import { useUIGenerationHistory } from '@/lib/stores/ui-generation-history';
 import { Button } from '@/components/ui/button';
 import { PreviewModal } from './preview-modal';
+import { eventEmitter } from '@/lib/utils/event-emitter';
 
 export function Sidebar() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true); // Start collapsed
+  const [filterCellIdentifier, setFilterCellIdentifier] = useState<string | null>(null);
   const { history, clearHistory, removeFromHistory } = useUIGenerationHistory();
   const [selectedPreviewUrl, setSelectedPreviewUrl] = useState<string>('');
   const [selectedChatUrl, setSelectedChatUrl] = useState<string>('');
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenHistory = (cellIdentifier?: string) => {
+      console.log('[Sidebar] Received open-history event:', cellIdentifier);
+      
+      // Toggle: if sidebar is open and showing the same cellIdentifier, close it
+      if (!isCollapsed && filterCellIdentifier === cellIdentifier) {
+        setIsCollapsed(true);
+        setFilterCellIdentifier(null);
+      } else {
+        // Otherwise, open sidebar with the new filter
+        setFilterCellIdentifier(cellIdentifier || null);
+        setIsCollapsed(false);
+      }
+    };
+
+    console.log('[Sidebar] Setting up event listener for open-history');
+    eventEmitter.on('open-history', handleOpenHistory);
+
+    return () => {
+      console.log('[Sidebar] Cleaning up event listener');
+      eventEmitter.off('open-history', handleOpenHistory);
+    };
+  }, [isCollapsed, filterCellIdentifier]);
 
   const handleItemClick = (item: { previewUrl: string; chatUrl?: string }) => {
     if (item.previewUrl) {
@@ -25,6 +51,15 @@ export function Sidebar() {
   const formatShortDate = (timestamp: number) => {
     return dayjs(timestamp).format('MMM D h:mm A');
   };
+
+  // Filter history by cellIdentifier if provided
+  // If filtering, show items that match the cellIdentifier OR items without cellIdentifier (backward compatibility)
+  const filteredHistory = filterCellIdentifier
+    ? history.filter((item) => 
+        item.cellIdentifier === filterCellIdentifier || 
+        !item.cellIdentifier // Include old items without cellIdentifier
+      )
+    : history;
 
   return (
     <>
@@ -51,7 +86,11 @@ export function Sidebar() {
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">History</h2>
+          <div>
+            <h2 className="text-lg font-semibold">
+            {filterCellIdentifier}
+            </h2>
+          </div>
         </div>
 
       {/* History Section */}
@@ -59,14 +98,31 @@ export function Sidebar() {
         <div className="px-4 py-3 border-b bg-muted/50 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4" />
-            <h3 className="text-sm font-medium">History ({history.length})</h3>
+            <h3 className="text-sm font-medium">
+              History ({filteredHistory.length})
+              {filterCellIdentifier && filteredHistory.length < history.length && (
+                <span className="text-xs text-muted-foreground ml-1">
+                  / {history.length} total
+                </span>
+              )}
+            </h3>
           </div>
-          {history.length > 0 && (
+          {filteredHistory.length > 0 && (
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              onClick={clearHistory}
+              onClick={() => {
+                if (filterCellIdentifier) {
+                  // Remove only filtered items
+                  filteredHistory.forEach((item) => {
+                    removeFromHistory(item.id);
+                  });
+                  setFilterCellIdentifier(null);
+                } else {
+                  clearHistory();
+                }
+              }}
               className="h-6 w-6 p-0"
             >
               <Trash className="w-3 h-3" />
@@ -75,13 +131,17 @@ export function Sidebar() {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {history.length === 0 ? (
+          {filteredHistory.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground">
-              <p className="text-sm">No generation history yet</p>
+              <p className="text-sm">
+                {filterCellIdentifier 
+                  ? `No history for ${filterCellIdentifier}` 
+                  : 'No generation history yet'}
+              </p>
             </div>
           ) : (
             <div className="divide-y">
-              {history.map((item) => (
+              {filteredHistory.map((item) => (
                 <div key={item.id} className="border-b">
                   <div className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors">
                     <button
