@@ -105,6 +105,7 @@ export function GenerateUIButton() {
 
       const chatDetail = chat as ChatDetail;
       console.log('[generate-ui] Chat created:', chatDetail.id);
+      console.log('[generate-ui] Full chatDetail:', JSON.stringify(chatDetail, null, 2));
       console.log('[generate-ui] Initial chat state:', {
         hasLatestVersion: !!chatDetail.latestVersion,
         files: chatDetail.latestVersion?.files?.length || 0,
@@ -161,6 +162,14 @@ export function GenerateUIButton() {
         previewUrl,
         chatId: chatDetail.id,
         chatUrl: chatDetail.webUrl,
+        chatDetail: chatDetail, // Store full chatDetail for debugging
+      });
+      
+      console.log('[generate-ui] Saved to history with chatDetail:', {
+        chatId: chatDetail.id,
+        chatUrl: chatDetail.webUrl,
+        previewUrl,
+        chatDetailKeys: Object.keys(chatDetail),
       });
       
       setIsModalOpen(true);

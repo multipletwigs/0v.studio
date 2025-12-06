@@ -13,11 +13,12 @@ export interface UIGenerationHistoryItem {
   previewUrl: string;
   chatId?: string;
   chatUrl?: string;
+  chatDetail?: unknown; // Store full chatDetail for debugging
 }
 
 interface UIGenerationHistoryStore {
   history: UIGenerationHistoryItem[];
-  addToHistory: (item: Omit<UIGenerationHistoryItem, 'id' | 'timestamp'>) => void;
+  addToHistory: (item: Omit<UIGenerationHistoryItem, 'id' | 'timestamp'> & { chatId: string }) => void;
   clearHistory: () => void;
   removeFromHistory: (id: string) => void;
 }
@@ -27,16 +28,31 @@ export const useUIGenerationHistory = create<UIGenerationHistoryStore>()(
     (set) => ({
       history: [],
       addToHistory: (item) =>
-        set((state) => ({
-          history: [
-            {
-              ...item,
-              id: `gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              timestamp: Date.now(),
-            },
-            ...state.history,
-          ],
-        })),
+        set((state) => {
+          // Use chatId as the id, or generate one if chatId is not available
+          const id = item.chatId || `gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          
+          // Check if item with this chatId already exists, if so, update it instead of adding duplicate
+          const existingIndex = state.history.findIndex((h) => h.chatId === item.chatId);
+          
+          const newItem = {
+            ...item,
+            id,
+            timestamp: Date.now(),
+          };
+          
+          if (existingIndex >= 0) {
+            // Update existing item
+            const updatedHistory = [...state.history];
+            updatedHistory[existingIndex] = newItem;
+            return { history: updatedHistory };
+          } else {
+            // Add new item at the beginning
+            return {
+              history: [newItem, ...state.history],
+            };
+          }
+        }),
       clearHistory: () => set({ history: [] }),
       removeFromHistory: (id) =>
         set((state) => ({

@@ -114,6 +114,7 @@ export function Sidebar() {
                       {/* Metadata */}
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-muted-foreground">
+                          {item.chatId ? `${item.chatId} • ` : ''}
                           {formatShortDate(item.timestamp)}
                         </p>
                       </div>
