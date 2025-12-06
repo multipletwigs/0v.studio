@@ -27,20 +27,23 @@ function GridInitializer() {
   const editor = useEditor();
   const { initializeGrid } = useGridCanvas();
 
+  // Track current page to re-initialize grid when page changes
+  const currentPageId = useValue('currentPageId', () => editor.getCurrentPageId(), [editor]);
+
   useEffect(() => {
     initializeGrid(editor);
-  }, [editor, initializeGrid]);
+  }, [editor, initializeGrid, currentPageId]);
 
   return null;
 }
 
 function CanvasInner() {
   return (
-    <div className="flex h-screen w-full">
+    <div className="h-screen w-full relative">
       <Sidebar />
-      <div className="flex-1 relative">
+      <div className="h-full w-full">
         <Tldraw
-          persistenceKey='locally'
+          persistenceKey='j'
           shapeUtils={[GridCellShapeUtil, VariantImageShapeUtil]}
           components={{
             ContextMenu: null,
@@ -48,14 +51,14 @@ function CanvasInner() {
             ZoomMenu: null,
             MainMenu: null,
             Toolbar: null,
-            PageMenu: null,
+            // PageMenu: null,
             NavigationPanel: null,
-            DebugPanel: null,
-            DebugMenu: null,
-            SharePanel: null,
-            MenuPanel: null,
-            TopPanel: null,
-            StylePanel: CustomStylePanel,
+            // DebugPanel: null,
+            // DebugMenu: null,
+            // SharePanel: null,
+            // MenuPanel: null,
+            // TopPanel: null,
+            StylePanel: null,
           }}
         >
           <GridInitializer />
@@ -140,25 +143,6 @@ function Toolbar() {
             <shape.icon size={20} />
           </button>
         ))}
-        <div className="w-full h-px bg-gray-200 my-1" />
-        <button
-          type="button"
-          onClick={() => editor.undo()}
-          disabled={!canUndo}
-          className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          title="Undo"
-        >
-          <ArrowCounterClockwise size={20} />
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.redo()}
-          disabled={!canRedo}
-          className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          title="Redo"
-        >
-          <ArrowClockwise size={20} />
-        </button>
         <div className="w-full h-px bg-gray-200 my-1" />
         <button
           type="button"

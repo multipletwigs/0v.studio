@@ -26,35 +26,33 @@ export function Sidebar() {
     return dayjs(timestamp).format('MMM D h:mm A');
   };
 
-  if (isCollapsed) {
-    return (
-      <div className="fixed top-4 left-4 z-50">
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => setIsCollapsed(false)}
-          className="shadow-lg"
-        >
-          <CaretRight className="w-4 h-4" />
-        </Button>
-      </div>
-    );
-  }
-
   return (
-    <div className="h-full w-80 bg-white border-r shadow-sm flex flex-col">
-      {/* Header with collapse button */}
-      <div className="flex items-center justify-between p-4 border-b">
-        <h2 className="text-lg font-semibold">Sidebar</h2>
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          onClick={() => setIsCollapsed(true)}
-        >
-          <CaretLeft className="w-4 h-4" />
-        </Button>
-      </div>
+    <>
+      {/* Toggle button - always visible */}
+      <button
+        type="button"
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className="fixed top-4 z-[60] w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-lg hover:bg-gray-100 transition-all duration-300"
+        style={{
+          right: isCollapsed ? '16px' : '352px',
+        }}
+        title={isCollapsed ? 'Open History' : 'Close History'}
+      >
+        {isCollapsed ? <CaretLeft size={20} /> : <CaretRight size={20} />}
+      </button>
+
+      {/* Sidebar panel */}
+      <div
+        className="fixed top-4 right-4 z-50 w-80 bg-white border rounded-lg shadow-lg flex flex-col transition-all duration-300 ease-in-out"
+        style={{
+          height: 'calc(100% - 32px)',
+          transform: isCollapsed ? 'translateX(calc(100% + 16px))' : 'translateX(0)',
+        }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b">
+          <h2 className="text-lg font-semibold">History</h2>
+        </div>
 
       {/* History Section */}
       <div className="flex-1 overflow-hidden flex flex-col">
@@ -135,14 +133,14 @@ export function Sidebar() {
           )}
         </div>
       </div>
-      
+      </div>
       <PreviewModal
         open={isPreviewModalOpen}
         onOpenChange={setIsPreviewModalOpen}
         previewUrl={selectedPreviewUrl}
         chatUrl={selectedChatUrl}
       />
-    </div>
+    </>
   );
 }
 
