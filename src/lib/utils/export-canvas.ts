@@ -7,32 +7,31 @@ export interface CanvasExport {
 }
 
 /**
- * Export the current viewport as an image
+ * Export the entire tldraw canvas as an image
  */
 export async function exportCanvas(editor: Editor): Promise<CanvasExport> {
-  // Get the current viewport bounds
-  const viewport = editor.getViewportPageBounds();
-
-  // Get all shapes visible in the viewport (for SVG export)
+  // Get all shapes on the canvas
   const allShapeIds = Array.from(editor.getCurrentPageShapeIds());
 
-  // Export PNG of the viewport
+  if (allShapeIds.length === 0) {
+    throw new Error('No shapes on canvas');
+  }
+
+  // Export PNG of entire canvas
   const imageResult = await editor.toImage(allShapeIds, {
     format: 'png',
     background: true,
-    bounds: viewport,
-    padding: 0,
+    padding: 16,
   });
 
   if (!imageResult?.blob) {
-    throw new Error('Failed to export viewport image');
+    throw new Error('Failed to export canvas image');
   }
 
-  // Export SVG of the viewport
+  // Export SVG of entire canvas
   const svgResult = await editor.getSvgString(allShapeIds, {
     background: true,
-    bounds: viewport,
-    padding: 0,
+    padding: 16,
   });
 
   const svgString = svgResult?.svg ?? '';
