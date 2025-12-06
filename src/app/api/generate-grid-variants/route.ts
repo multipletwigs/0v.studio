@@ -15,24 +15,23 @@ const variantDescriptionsSchema = z.object({
     .describe('Three different layout variant descriptions'),
 });
 
-const DESCRIPTION_SYSTEM = `You are a creative design analyst. Given an image (the "seed"), analyze it and generate 3 different layout variant ideas.
+const DESCRIPTION_SYSTEM = `You are a creative design analyst. Given a tldraw drawing (the "seed"), analyze it and generate 3 different layout variant ideas.
+
+CONTEXT: The seed image is a drawing created in tldraw (a digital drawing/whiteboard tool). All variants should maintain the tldraw drawing style.
 
 Your task:
-1. Identify what the seed image depicts (seed_context)
-2. Generate 3 creative layout variants that explore different arrangements, compositions, or interpretations
+1. Identify what the seed drawing depicts (seed_context) - describe the content, elements, and purpose
+2. Analyze what components or functionality might be missing that this type of element typically has
+3. Generate 3 creative layout variants that explore different arrangements AND potentially include additional typical components/functionality
 
 Each variant description should:
-- Be detailed enough for an image generator to recreate
-- Focus on layout, composition, and spatial arrangement differences
-- Maintain the core concept but explore new directions
-- Be suitable for hand-drawn sketch style
+- Be detailed enough to recreate the concept with different layout/composition
+- Consider adding missing typical components (e.g., if it's a form, maybe add submit button; if it's a card, maybe add actions/metadata; if it's a navigation, maybe add search/icons)
+- Focus on how to rearrange, reposition, or restructure the elements
+- Explore new spatial arrangements while enhancing completeness
+- Be specific about positioning and relationships between elements
 
-Examples of good variant descriptions:
-- "Vertical layout with elements stacked from top to bottom, larger title at top"
-- "Circular composition with elements radiating from center point outward"
-- "Asymmetric layout with main element on left, supporting elements clustered on right"
-
-Return exactly 3 variant descriptions.`;
+Return exactly 3 creative variant descriptions that explore both layout changes and functional enhancements.`;
 
 interface GridVariantsRequest {
   image: string;
@@ -47,15 +46,30 @@ async function generateImageVariant(
   seedContext: string,
   variantDescription: string
 ): Promise<string> {
-  // Generate a hand-drawn sketch variant using Google Gemini's image generation
-  const imagePrompt = `Generate an image: Hand-drawn pencil sketch on white paper. ${seedContext}. Layout: ${variantDescription}. Style: loose, sketchy lines, hand-drawn aesthetic, simple black and white sketch, artistic and expressive.`;
+  // Generate a tldraw-style variant
+  const imagePrompt = `Generate an image in tldraw drawing style. Content: ${seedContext}. Layout: ${variantDescription}. Style: Match the tldraw digital drawing aesthetic shown in the seed image - simple vector-like drawings with clean lines, basic shapes, and minimal colors. Maintain the same drawing style and visual language while applying the new layout.`;
 
   console.log('[generate-image-variant] Prompt:', imagePrompt);
 
   // Using Google Gemini's native image generation via generateText
+  // Include the seed image as reference for style matching
   const result = await generateText({
     model: gateway('google/gemini-3-pro-image'),
-    prompt: imagePrompt,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            image: seedImageBase64,
+          },
+          {
+            type: 'text',
+            text: imagePrompt,
+          },
+        ],
+      },
+    ],
   });
 
   // Extract the image from the files
