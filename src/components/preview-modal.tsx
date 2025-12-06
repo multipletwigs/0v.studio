@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,8 @@ interface PreviewModalProps {
 }
 
 export function PreviewModal({ open, onOpenChange, previewUrl, chatUrl }: PreviewModalProps) {
+  const [isLoading, setIsLoading] = useState(true);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
@@ -28,13 +31,22 @@ export function PreviewModal({ open, onOpenChange, previewUrl, chatUrl }: Previe
           <DialogTitle>Generated UI Preview</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden mt-4">
+        <div className="flex-1 overflow-hidden mt-4 relative">
           {previewUrl ? (
-            <div className="w-full h-full border rounded-lg overflow-hidden flex flex-col">
+            <div key={previewUrl} className="w-full h-full border rounded-lg overflow-hidden flex flex-col relative">
+              {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-10">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                    <p className="text-sm text-muted-foreground">Loading preview...</p>
+                  </div>
+                </div>
+              )}
               <iframe
                 src={previewUrl}
                 className="flex-1 w-full border-0"
                 title="Generated UI Preview"
+                onLoad={() => setIsLoading(false)}
               />
             </div>
           ) : (
