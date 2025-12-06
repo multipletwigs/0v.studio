@@ -49,10 +49,12 @@ export async function POST(request: NextRequest) {
         You will receive a mid-fi mockup of a component. You will need to build a complete version of the UI, extending from the mockup.
         Its UI should be production ready, super polished, and can be competing with any other app in the market.
         It should also be realistic and functional.
-        Generate clean, production-ready code UI with Tailwind CSS and shadcn/ui components.
 
         Here is a description of the image, do not be bothered by the styles, it is for you to understand functionality -- Remember your goal is to generate final production ready UI using shadcn:
         ${contextPrompt}
+
+
+        Generate clean, production-ready code UI with Tailwind CSS use ShadCN UI components. You must use Shadcn UI Components.
       `,
       responseMode: 'sync',
       chatPrivacy: 'public',

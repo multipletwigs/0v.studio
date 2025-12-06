@@ -249,7 +249,7 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
         overflow: 'visible',
         pointerEvents: 'all',
         position: 'relative',
-        opacity: hasAnyVariants ? 0 : 1,
+        opacity: (cellType === 'variant' && hasAnyVariants) ? 0 : 1,
         transition: 'opacity 0.2s ease',
       }}
     >
