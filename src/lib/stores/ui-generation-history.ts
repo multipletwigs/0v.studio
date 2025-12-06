@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 export interface GeneratedFile {
   name: string;
@@ -21,23 +22,30 @@ interface UIGenerationHistoryStore {
   removeFromHistory: (id: string) => void;
 }
 
-export const useUIGenerationHistory = create<UIGenerationHistoryStore>((set) => ({
-  history: [],
-  addToHistory: (item) =>
-    set((state) => ({
-      history: [
-        {
-          ...item,
-          id: `gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          timestamp: Date.now(),
-        },
-        ...state.history,
-      ],
-    })),
-  clearHistory: () => set({ history: [] }),
-  removeFromHistory: (id) =>
-    set((state) => ({
-      history: state.history.filter((item) => item.id !== id),
-    })),
-}));
+export const useUIGenerationHistory = create<UIGenerationHistoryStore>()(
+  persist(
+    (set) => ({
+      history: [],
+      addToHistory: (item) =>
+        set((state) => ({
+          history: [
+            {
+              ...item,
+              id: `gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              timestamp: Date.now(),
+            },
+            ...state.history,
+          ],
+        })),
+      clearHistory: () => set({ history: [] }),
+      removeFromHistory: (id) =>
+        set((state) => ({
+          history: state.history.filter((item) => item.id !== id),
+        })),
+    }),
+    {
+      name: 'ui-generation-history-storage', // unique name for localStorage key
+    }
+  )
+);
 

@@ -4,15 +4,7 @@ import { useState } from 'react';
 import { useEditor, useValue } from 'tldraw';
 import { Sparkle } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PreviewModal } from './preview-modal';
 import { createClient, type ChatDetail } from 'v0-sdk';
 import { exportSelection } from '@/lib/utils/export-selection';
 import { put } from '@vercel/blob';
@@ -29,10 +21,9 @@ export function GenerateUIButton() {
   const addToHistory = useUIGenerationHistory((state) => state.addToHistory);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedFiles, setGeneratedFiles] = useState<Array<{ name: string; content: string }>>([]);
   const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [chatUrl, setChatUrl] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('');
 
   // Get selected shapes and their bounds
   const selectionData = useValue(
@@ -64,9 +55,7 @@ export function GenerateUIButton() {
 
     setIsGenerating(true);
     setError(null);
-    setGeneratedFiles([]);
     setPreviewUrl('');
-    setActiveTab('');
 
     try {
       // Export selection as image
@@ -122,27 +111,18 @@ export function GenerateUIButton() {
         demoUrl: chatDetail.latestVersion?.demoUrl,
       });
 
-      // Check if files are already available
-      let files: Array<{ name: string; content: string }> = [];
+      // Wait for preview URL to be available
       let previewUrl = chatDetail.latestVersion?.demoUrl || '';
       
-      if (chatDetail.latestVersion?.files && chatDetail.latestVersion.files.length > 0) {
-        files = chatDetail.latestVersion.files.map((file) => ({
-          name: file.name || 'unknown',
-          content: file.content || '',
-        }));
-        previewUrl = chatDetail.latestVersion.demoUrl || previewUrl;
-        console.log('[generate-ui] Files available immediately:', files.length);
-      } else {
-        // Wait a bit for code generation, then fetch the chat again to get the files
-        // Sometimes the files aren't immediately available
+      if (!previewUrl) {
+        // Poll for preview URL if not immediately available
         let attempts = 0;
-        const maxAttempts = 300; // Increased from 10 to 20
-        const delayMs = 2000; // Increased from 1000ms to 2000ms
+        const maxAttempts = 300;
+        const delayMs = 2000;
 
-        console.log('[generate-ui] Files not immediately available, polling...');
+        console.log('[generate-ui] Preview URL not immediately available, polling...');
         
-        while (attempts < maxAttempts && files.length === 0) {
+        while (attempts < maxAttempts && !previewUrl) {
           await new Promise((resolve) => setTimeout(resolve, delayMs));
           attempts++;
           
@@ -150,17 +130,12 @@ export function GenerateUIButton() {
             const updatedChat = await client.chats.getById({ chatId: chatDetail.id });
             console.log(`[generate-ui] Poll attempt ${attempts}:`, {
               hasLatestVersion: !!updatedChat.latestVersion,
-              files: updatedChat.latestVersion?.files?.length || 0,
               demoUrl: updatedChat.latestVersion?.demoUrl,
             });
             
-            if (updatedChat.latestVersion?.files && updatedChat.latestVersion.files.length > 0) {
-              files = updatedChat.latestVersion.files.map((file) => ({
-                name: file.name || 'unknown',
-                content: file.content || '',
-              }));
-              previewUrl = updatedChat.latestVersion.demoUrl || previewUrl;
-              console.log('[generate-ui] Files found after polling:', files.length);
+            if (updatedChat.latestVersion?.demoUrl) {
+              previewUrl = updatedChat.latestVersion.demoUrl;
+              console.log('[generate-ui] Preview URL found after polling');
               break;
             }
           } catch (pollError) {
@@ -169,22 +144,20 @@ export function GenerateUIButton() {
         }
       }
 
-      if (!files || files.length === 0) {
-        console.error('[generate-ui] No files generated after polling');
+      if (!previewUrl) {
+        console.error('[generate-ui] No preview URL generated after polling');
         throw new Error(
-          `Code generation is taking longer than expected. Chat ID: ${chatDetail.id}. ` +
+          `Preview generation is taking longer than expected. Chat ID: ${chatDetail.id}. ` +
           `You can check the chat status manually. Please try again later.`
         );
       }
 
-      // Store files separately
-      setGeneratedFiles(files);
       setPreviewUrl(previewUrl);
-      setActiveTab(files[0]?.name || '');
+      setChatUrl(chatDetail.webUrl || '');
       
-      // Save to history
+      // Save to history (with empty files array since we don't need code)
       addToHistory({
-        files,
+        files: [],
         previewUrl,
         chatId: chatDetail.id,
         chatUrl: chatDetail.webUrl,
@@ -200,14 +173,6 @@ export function GenerateUIButton() {
     }
   };
 
-  const handleCopy = async (content?: string) => {
-    try {
-      const textToCopy = content || generatedFiles.find(f => f.name === activeTab)?.content || '';
-      await navigator.clipboard.writeText(textToCopy);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  };
 
   if (!selectionData) return null;
 
@@ -250,105 +215,12 @@ export function GenerateUIButton() {
         </div>
       )}
 
-      <Dialog open={isModalOpen} onOpenChange={(open) => !open && setIsModalOpen(false)}>
-        <DialogContent 
-          className="max-h-[95vh] h-full flex flex-col p-6"
-          style={{ width: 'calc(100% - 80px)' }}
-        >
-          <DialogHeader>
-            <DialogTitle>Generated UI Code</DialogTitle>
-            <DialogDescription>
-              View the preview and generated React/Next.js code files.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-hidden flex gap-4 mt-4">
-            {/* Preview on the left */}
-            {previewUrl && (
-              <div className="flex-1 border rounded-lg overflow-hidden flex flex-col">
-                <div className="px-4 py-2 border-b bg-muted/50">
-                  <h3 className="text-sm font-medium">Preview</h3>
-                </div>
-                <iframe
-                  src={previewUrl}
-                  className="flex-1 w-full border-0"
-                  title="Generated UI Preview"
-                />
-              </div>
-            )}
-
-            {/* Code on the right */}
-            <div className="flex-1 flex flex-col border rounded-lg overflow-hidden">
-              <div className="px-4 py-2 border-b bg-muted/50 flex items-center justify-between">
-                <h3 className="text-sm font-medium">Generated Code</h3>
-                {activeTab && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleCopy()}
-                  >
-                    Copy Current File
-                  </Button>
-                )}
-              </div>
-              
-              {generatedFiles.length > 0 ? (
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-                  <TabsList className="w-full justify-start rounded-none border-b px-4">
-                    {generatedFiles.map((file) => (
-                      <TabsTrigger
-                        key={file.name}
-                        value={file.name}
-                        className="data-[state=active]:border-b-2 data-[state=active]:border-primary"
-                      >
-                        {file.name}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                  
-                  {generatedFiles.map((file) => (
-                    <TabsContent
-                      key={file.name}
-                      value={file.name}
-                      className="flex-1 overflow-auto m-0 p-4"
-                    >
-                      <textarea
-                        value={file.content}
-                        readOnly
-                        className="w-full h-full p-3 border rounded-lg font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                        style={{ minHeight: '100%' }}
-                      />
-                    </TabsContent>
-                  ))}
-                </Tabs>
-              ) : (
-                <div className="flex-1 flex items-center justify-center p-8">
-                  <p className="text-muted-foreground">No code generated yet</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <DialogFooter className="mt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsModalOpen(false)}
-            >
-              Close
-            </Button>
-            {generatedFiles.length > 0 && (
-              <Button
-                type="button"
-                onClick={() => handleCopy()}
-              >
-                Copy Current File
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PreviewModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        previewUrl={previewUrl}
+        chatUrl={chatUrl}
+      />
     </>
   );
 }

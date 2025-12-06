@@ -1,43 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { CaretLeft, CaretRight, Clock, Trash, CaretDown, CaretRight as CaretRightIcon, File } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, Clock, Trash } from '@phosphor-icons/react';
+import dayjs from 'dayjs';
 import { useUIGenerationHistory } from '@/lib/stores/ui-generation-history';
 import { Button } from '@/components/ui/button';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { PreviewModal } from './preview-modal';
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { history, clearHistory, removeFromHistory } = useUIGenerationHistory();
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [selectedPreviewUrl, setSelectedPreviewUrl] = useState<string>('');
+  const [selectedChatUrl, setSelectedChatUrl] = useState<string>('');
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
-  const toggleItem = (itemId: string) => {
-    setExpandedItems((prev) => {
-      const next = new Set(prev);
-      if (next.has(itemId)) {
-        next.delete(itemId);
-      } else {
-        next.add(itemId);
-      }
-      return next;
-    });
-  };
-
-  const handleCopy = async (content: string) => {
-    try {
-      await navigator.clipboard.writeText(content);
-    } catch (err) {
-      console.error('Failed to copy:', err);
+  const handleItemClick = (item: { previewUrl: string; chatUrl?: string }) => {
+    if (item.previewUrl) {
+      setSelectedPreviewUrl(item.previewUrl);
+      setSelectedChatUrl(item.chatUrl || '');
+      setIsPreviewModalOpen(true);
     }
   };
 
   const formatShortDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    return dayjs(timestamp).format('MMM D h:mm A');
   };
 
   if (isCollapsed) {
@@ -97,90 +83,64 @@ export function Sidebar() {
             </div>
           ) : (
             <div className="divide-y">
-              {history.map((item) => {
-                const isExpanded = expandedItems.has(item.id);
-                
-                return (
-                  <Collapsible
-                    key={item.id}
-                    open={isExpanded}
-                    onOpenChange={() => toggleItem(item.id)}
-                  >
-                    <div className="border-b">
-                      <CollapsibleTrigger className="w-full">
-                        <div className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors">
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            {isExpanded ? (
-                              <CaretDown className="w-3 h-3 shrink-0 text-muted-foreground" />
-                            ) : (
-                              <CaretRightIcon className="w-3 h-3 shrink-0 text-muted-foreground" />
-                            )}
-                            {/* Preview Image */}
-                            {item.previewUrl ? (
-                              <div className="w-16 h-12 border rounded overflow-hidden shrink-0 bg-muted relative flex items-center justify-center">
-                                <iframe
-                                  src={item.previewUrl}
-                                  className="absolute border-0 pointer-events-none"
-                                  style={{
-                                    width: '640px',
-                                    height: '480px',
-                                    transform: 'scale(0.1)',
-                                    transformOrigin: 'center center',
-                                  }}
-                                  title="Preview"
-                                />
-                              </div>
-                            ) : (
-                              <div className="w-16 h-12 border rounded shrink-0 bg-muted flex items-center justify-center">
-                                <span className="text-xs text-muted-foreground">No preview</span>
-                              </div>
-                            )}
-                            {/* Metadata */}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs text-muted-foreground">
-                                {formatShortDate(item.timestamp)} • {item.files.length} file{item.files.length !== 1 ? 's' : ''}
-                              </p>
-                            </div>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 shrink-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeFromHistory(item.id);
+              {history.map((item) => (
+                <div key={item.id} className="border-b">
+                  <div className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors">
+                    <button
+                      type="button"
+                      className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                      onClick={() => handleItemClick(item)}
+                    >
+                      {/* Preview Image */}
+                      {item.previewUrl ? (
+                        <div className="w-16 h-12 border rounded overflow-hidden shrink-0 bg-muted relative">
+                          <iframe
+                            src={item.previewUrl}
+                            className="absolute inset-0 w-full h-full border-0 pointer-events-none"
+                            style={{
+                              transform: 'scale(0.1)',
+                              transformOrigin: 'top left',
+                              width: '640px',
+                              height: '480px',
                             }}
-                          >
-                            <Trash className="w-3 h-3" />
-                          </Button>
+                            title="Preview"
+                          />
                         </div>
-                      </CollapsibleTrigger>
-                      
-                      <CollapsibleContent>
-                        <div className="pl-8 pr-3 pb-3 space-y-1">
-                          {item.files.map((file) => (
-                            <button
-                              key={file.name}
-                              type="button"
-                              className="w-full flex items-center gap-2 p-2 hover:bg-muted/50 rounded text-left transition-colors"
-                              onClick={() => handleCopy(file.content)}
-                              title="Click to copy"
-                            >
-                              <File className="w-3 h-3 text-muted-foreground shrink-0" />
-                              <span className="text-xs font-mono truncate flex-1">{file.name}</span>
-                            </button>
-                          ))}
+                      ) : (
+                        <div className="w-16 h-12 border rounded shrink-0 bg-muted flex items-center justify-center">
+                          <span className="text-xs text-muted-foreground">No preview</span>
                         </div>
-                      </CollapsibleContent>
-                    </div>
-                  </Collapsible>
-                );
-              })}
+                      )}
+                      {/* Metadata */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-muted-foreground">
+                          {formatShortDate(item.timestamp)}
+                        </p>
+                      </div>
+                    </button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 shrink-0"
+                      onClick={() => removeFromHistory(item.id)}
+                    >
+                      <Trash className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
       </div>
+      
+      <PreviewModal
+        open={isPreviewModalOpen}
+        onOpenChange={setIsPreviewModalOpen}
+        previewUrl={selectedPreviewUrl}
+        chatUrl={selectedChatUrl}
+      />
     </div>
   );
 }
