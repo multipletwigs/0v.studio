@@ -1,14 +1,13 @@
 import { BaseBoxShapeUtil, HTMLContainer, Rectangle2d, T, useEditor, useValue } from 'tldraw';
 import type { TLBaseShape, RecordProps } from 'tldraw';
 import { useState } from 'react';
-import { createClient, type ChatDetail } from 'v0-sdk';
-import { put } from '@vercel/blob';
 import { useUIGenerationHistory } from '@/lib/stores/ui-generation-history';
 import { PreviewModal } from '@/components/preview-modal';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Clock, ArrowClockwise } from '@phosphor-icons/react';
+import { Clock } from '@phosphor-icons/react';
 import { eventEmitter } from '@/lib/utils/event-emitter';
+import { LogoV0 } from '@/components/logov0';
 
 // Type definition
 export type GridCellShape = TLBaseShape<
@@ -86,11 +85,6 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
     });
 
     try {
-      // Create v0 client
-      const client = createClient({
-        apiKey: process.env.NEXT_PUBLIC_V0_API_KEY || process.env.V0_API_KEY,
-      });
-
       console.log('[GridCell] Starting UI generation...');
       // Get all shapes inside this grid cell (excluding the grid-cell itself)
       const cellBounds = editor.getShapePageBounds(shape.id);
@@ -154,116 +148,44 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
         reader.readAsDataURL(imageResult.blob);
       });
 
-      // Convert base64 to Blob
-      const byteCharacters = atob(imageBase64);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'image/png' });
-
-      // Upload to Vercel Blob storage
-      console.log('[generate-ui] Uploading image to Vercel Blob...');
-      const { url } = await put(`tldraw-${Date.now()}.png`, blob, {
-        access: 'public',
-        token: process.env.NEXT_PUBLIC_BLOB_READ_WRITE_TOKEN,
-      });
-      console.log('[generate-ui] Image uploaded to Vercel Blob:', url);
-
-      // Create a chat with v0 SDK using the image URL
-      console.log('[generate-ui] Creating v0 chat with image...');
-
-      const chat = await client.chats.create({
-        message: `
-          You are an expert design engineer, who builds the most beautiful UI in the world. 
-          You will receive a mid-fi mockup of a component. You will need to build a complete version of the UI, extending from the mockup.
-          Generate clean, production-ready code UI with Tailwind CSS and shadcn/ui components.
-          Its UI should be production ready, super polished, and can be competing with any other app in the market.
-        `,
-        responseMode: 'sync',
-        attachments: [
-          {
-            url,
-          },
-        ],
-        modelConfiguration: {
-          modelId: 'v0-1.5-md',
-          imageGenerations: false,
+      // Call API route to generate UI (upload and chat creation happen server-side)
+      console.log('[generate-ui] Calling generate-ui API route...');
+      const response = await fetch('/api/generate-ui', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ imageBase64 }),
       });
 
-      // Type guard to ensure we have a ChatDetail and not a stream
-      if (chat instanceof ReadableStream) {
-        throw new Error('Unexpected streaming response');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate UI');
       }
 
-      const chatDetail = chat as ChatDetail;
-      console.log('[generate-ui] Chat created:', chatDetail.id);
-      console.log('[generate-ui] Full chatDetail:', JSON.stringify(chatDetail, null, 2));
-      console.log('[generate-ui] Initial chat state:', {
-        hasLatestVersion: !!chatDetail.latestVersion,
-        files: chatDetail.latestVersion?.files?.length || 0,
-        demoUrl: chatDetail.latestVersion?.demoUrl,
-      });
-
-      // Wait for preview URL to be available
-      let previewUrl = chatDetail.latestVersion?.demoUrl || '';
-
-      if (!previewUrl) {
-        // Poll for preview URL if not immediately available
-        let attempts = 0;
-        const maxAttempts = 300;
-        const delayMs = 2000;
-
-        console.log('[generate-ui] Preview URL not immediately available, polling...');
-
-        while (attempts < maxAttempts && !previewUrl) {
-          await new Promise((resolve) => setTimeout(resolve, delayMs));
-          attempts++;
-
-          try {
-            const updatedChat = await client.chats.getById({ chatId: chatDetail.id });
-            console.log(`[generate-ui] Poll attempt ${attempts}:`, {
-              hasLatestVersion: !!updatedChat.latestVersion,
-              demoUrl: updatedChat.latestVersion?.demoUrl,
-            });
-
-            if (updatedChat.latestVersion?.demoUrl) {
-              previewUrl = updatedChat.latestVersion.demoUrl;
-              console.log('[generate-ui] Preview URL found after polling');
-              break;
-            }
-          } catch (pollError) {
-            console.error(`[generate-ui] Error polling attempt ${attempts}:`, pollError);
-          }
-        }
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to generate UI');
       }
 
-      if (!previewUrl) {
-        console.error('[generate-ui] No preview URL generated after polling');
-        throw new Error(
-          `Preview generation is taking longer than expected. Chat ID: ${chatDetail.id}. ` +
-          `You can check the chat status manually. Please try again later.`
-        );
-      }
+      const { chatId, chatUrl, previewUrl, chatDetail } = result.data;
 
       setPreviewUrl(previewUrl);
-      setChatUrl(chatDetail.webUrl || '');
+      setChatUrl(chatUrl || '');
 
       // Save to history with cellIdentifier
       addToHistory({
         files: [],
         previewUrl,
-        chatId: chatDetail.id,
-        chatUrl: chatDetail.webUrl,
+        chatId,
+        chatUrl,
         chatDetail: chatDetail,
         cellIdentifier: cellIdentifier,
       });
 
       console.log('[generate-ui] Saved to history:', {
-        chatId: chatDetail.id,
-        chatUrl: chatDetail.webUrl,
+        chatId,
+        chatUrl,
         previewUrl,
       });
 
@@ -362,22 +284,7 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
                   className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 flex items-center gap-1"
                 >
                   <span>Generate with</span>
-                  <svg
-                    data-testid="geist-icon"
-                    height="16"
-                    strokeLinejoin="round"
-                    viewBox="0 0 16 16"
-                    width="16"
-                    style={{ color: 'currentcolor' }}
-                    className="w-4 h-4"
-                    aria-label="v0 logo"
-                  >
-                    <title>v0</title>
-                    <path
-                      d="M6.0952 9.4643V5.5238H7.6190V10.5476C7.6190 11.1394 7.1394 11.6190 6.5476 11.6190C6.2651 11.6190 5.9862 11.5101 5.7857 11.3096L0 5.5238H2.1548L6.0952 9.4643Z M16 10.0952H14.4762V6.6071L10.9881 10.0952H14.4762V11.6190H10.5238C9.3403 11.6190 8.3810 10.6597 8.3810 9.4762V5.5238H9.9048V9.0238L13.4047 5.5238H9.9048V4H13.8571C15.0407 4 16 4.9594 16 6.1429V10.0952Z"
-                      fill="currentColor"
-                    />
-                  </svg>
+                  <LogoV0 />
                 </Button>
             );
           })()}

@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { LogoV0 } from './logov0';
 
 interface PreviewModalProps {
   open: boolean;
@@ -45,16 +46,11 @@ export function PreviewModal({ open, onOpenChange, previewUrl, chatUrl }: Previe
 
         <DialogFooter className="mt-4 gap-2">
           {chatUrl && (
-            <Button
-              type="button"
-              asChild
-              className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200"
-            >
               <a
                 href={chatUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2"
+                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all h-9 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <svg
                   width="16"
@@ -71,9 +67,9 @@ export function PreviewModal({ open, onOpenChange, previewUrl, chatUrl }: Previe
                     fill="currentColor"
                   />
                 </svg>
-                <span>Open in v0.dev</span>
+                <span>Open in</span>
+                <LogoV0 />
               </a>
-            </Button>
           )}
           <Button
             type="button"
