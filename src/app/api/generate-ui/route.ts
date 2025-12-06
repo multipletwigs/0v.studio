@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
         ${contextPrompt}
       `,
       responseMode: 'sync',
+      chatPrivacy: 'public',
       attachments: [
         {
           url: imageUrl,
