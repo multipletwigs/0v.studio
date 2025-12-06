@@ -61,10 +61,72 @@ const textShapeSchema = z.object({
   }),
 });
 
+// Draw shape schema (freehand drawings)
+// Segments contain arrays of points that form the path
+const drawShapeSchema = z.object({
+  type: z.literal('draw'),
+  x: z.number(),
+  y: z.number(),
+  rotation: z.number().default(0),
+  props: z.object({
+    color: colorSchema.default('black'),
+    dash: z.enum(['draw', 'solid', 'dashed', 'dotted']).default('draw'),
+    size: z.enum(['s', 'm', 'l', 'xl']).default('m'),
+    fill: z.enum(['none', 'semi', 'solid', 'pattern']).default('none'),
+    segments: z.array(
+      z.object({
+        type: z.enum(['free', 'straight']).default('free'),
+        points: z.array(
+          z.object({
+            x: z.number(),
+            y: z.number(),
+            z: z.number().default(0.5), // pressure
+          })
+        ),
+      })
+    ),
+    isClosed: z.boolean().default(false),
+    isComplete: z.boolean().default(true),
+    scale: z.number().default(1),
+  }),
+});
+
+// Arrow shape schema
+// Arrows connect two points and can have labels
+const arrowShapeSchema = z.object({
+  type: z.literal('arrow'),
+  x: z.number(),
+  y: z.number(),
+  rotation: z.number().default(0),
+  props: z.object({
+    color: colorSchema.default('black'),
+    dash: z.enum(['draw', 'solid', 'dashed', 'dotted']).default('draw'),
+    size: z.enum(['s', 'm', 'l', 'xl']).default('m'),
+    fill: z.enum(['none', 'semi', 'solid', 'pattern']).default('none'),
+    arrowheadStart: z.enum(['none', 'arrow', 'triangle', 'square', 'dot', 'diamond', 'inverted', 'bar', 'pipe']).default('none'),
+    arrowheadEnd: z.enum(['none', 'arrow', 'triangle', 'square', 'dot', 'diamond', 'inverted', 'bar', 'pipe']).default('arrow'),
+    start: z.object({
+      x: z.number(),
+      y: z.number(),
+    }),
+    end: z.object({
+      x: z.number(),
+      y: z.number(),
+    }),
+    bend: z.number().default(0),
+    text: z.string().default(''), // Label on the arrow
+    labelPosition: z.number().min(0).max(1).default(0.5),
+    font: z.enum(['draw', 'sans', 'serif', 'mono']).default('draw'),
+    scale: z.number().default(1),
+  }),
+});
+
 // Union of supported shape types
 export const shapeSchema = z.discriminatedUnion('type', [
   geoShapeSchema,
   textShapeSchema,
+  drawShapeSchema,
+  arrowShapeSchema,
 ]);
 
 // A single variant containing multiple shapes
@@ -87,6 +149,8 @@ export const variantsResponseSchema = z.object({
 // Type exports
 export type GeoShape = z.infer<typeof geoShapeSchema>;
 export type TextShape = z.infer<typeof textShapeSchema>;
+export type DrawShape = z.infer<typeof drawShapeSchema>;
+export type ArrowShape = z.infer<typeof arrowShapeSchema>;
 export type Shape = z.infer<typeof shapeSchema>;
 export type Variant = z.infer<typeof variantSchema>;
 export type VariantsResponse = z.infer<typeof variantsResponseSchema>;

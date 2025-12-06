@@ -34,14 +34,14 @@ export interface SerializedShape {
 }
 
 export interface GenerateVariantsRequest {
-  shapes: SerializedShape[];
+  imageBase64: string;
+  svgString?: string;
   selectionBounds: {
     x: number;
     y: number;
     width: number;
     height: number;
   };
-  variantCount?: number;
   context?: string;
 }
 

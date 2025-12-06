@@ -5,97 +5,17 @@ import {
   useContext,
   useCallback,
   useReducer,
+  useEffect,
   type ReactNode,
 } from 'react';
-import { Editor, createShapeId, toRichText, type TLShapeId, type TLShapePartial } from 'tldraw';
+import { Editor, createShapeId, toRichText, type TLShapeId } from 'tldraw';
 import type {
   VariantGenerationState,
-  VariantStatus,
-  SerializedShape,
   GenerateVariantsResponse,
 } from '@/lib/types/variant-state';
 import type { Variant } from '@/lib/schemas/shape-variants';
-
-// Action types
-type VariantAction =
-  | {
-      type: 'START_GENERATION';
-      sourceShapeIds: TLShapeId[];
-      bounds: { x: number; y: number; width: number; height: number };
-    }
-  | { type: 'GENERATION_SUCCESS'; variants: Variant[] }
-  | { type: 'GENERATION_ERROR'; error: string }
-  | { type: 'SET_VARIANT_STATUS'; variantId: string; status: VariantStatus }
-  | { type: 'SET_PREVIEW_SHAPE_IDS'; variantId: string; shapeIds: TLShapeId[] }
-  | { type: 'RESET' };
-
-const initialState: VariantGenerationState = {
-  isGenerating: false,
-  error: null,
-  sourceShapeIds: [],
-  sourceSelectionBounds: null,
-  variants: [],
-};
-
-function variantReducer(
-  state: VariantGenerationState,
-  action: VariantAction
-): VariantGenerationState {
-  switch (action.type) {
-    case 'START_GENERATION':
-      return {
-        ...state,
-        isGenerating: true,
-        error: null,
-        sourceShapeIds: action.sourceShapeIds,
-        sourceSelectionBounds: action.bounds,
-        variants: [],
-      };
-
-    case 'GENERATION_SUCCESS':
-      return {
-        ...state,
-        isGenerating: false,
-        variants: action.variants.map((variant) => ({
-          id: variant.id,
-          variant,
-          status: 'pending' as VariantStatus,
-          previewShapeIds: [],
-        })),
-      };
-
-    case 'GENERATION_ERROR':
-      return {
-        ...state,
-        isGenerating: false,
-        error: action.error,
-      };
-
-    case 'SET_VARIANT_STATUS':
-      return {
-        ...state,
-        variants: state.variants.map((v) =>
-          v.id === action.variantId ? { ...v, status: action.status } : v
-        ),
-      };
-
-    case 'SET_PREVIEW_SHAPE_IDS':
-      return {
-        ...state,
-        variants: state.variants.map((v) =>
-          v.id === action.variantId
-            ? { ...v, previewShapeIds: action.shapeIds }
-            : v
-        ),
-      };
-
-    case 'RESET':
-      return initialState;
-
-    default:
-      return state;
-  }
-}
+import { variantReducer, initialState } from './variant-reducer';
+import { exportSelection } from '@/lib/utils/export-selection';
 
 interface VariantContextValue {
   state: VariantGenerationState;
@@ -111,29 +31,15 @@ const VariantContext = createContext<VariantContextValue | null>(null);
 export function VariantProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(variantReducer, initialState);
 
-  // Serialize shapes for API - only geo and text shapes
-  const serializeShapes = useCallback(
-    (editor: Editor, shapeIds: TLShapeId[]): SerializedShape[] => {
-      const serialized: SerializedShape[] = [];
-      for (const id of shapeIds) {
-        const shape = editor.getShape(id);
-        if (!shape) continue;
-        // Only include geo and text shapes
-        if (shape.type !== 'geo' && shape.type !== 'text') continue;
-        serialized.push({
-          id: shape.id as string,
-          type: shape.type,
-          x: shape.x,
-          y: shape.y,
-          rotation: shape.rotation,
-          opacity: shape.opacity,
-          props: shape.props as Record<string, unknown>,
-        });
-      }
-      return serialized;
-    },
-    []
-  );
+  // Auto-dismiss errors after 3 seconds
+  useEffect(() => {
+    if (state.error) {
+      const timer = setTimeout(() => {
+        dispatch({ type: 'CLEAR_ERROR' });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [state.error]);
 
   // Convert AI response shapes to tldraw shapes
   // Transforms 'text' prop to 'richText' format expected by tldraw v4
@@ -202,21 +108,15 @@ export function VariantProvider({ children }: { children: ReactNode }) {
       });
 
       try {
-        const serializedShapes = serializeShapes(editor, [...selectedIds]);
-
-        if (serializedShapes.length === 0) {
-          dispatch({
-            type: 'GENERATION_ERROR',
-            error: 'No supported shapes selected (geo or text only)',
-          });
-          return;
-        }
+        // Export selection as PNG and SVG
+        const { imageBase64, svgString } = await exportSelection(editor);
 
         const response = await fetch('/api/generate-variants', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            shapes: serializedShapes,
+            imageBase64,
+            svgString,
             selectionBounds: {
               x: bounds.x,
               y: bounds.y,
@@ -251,7 +151,7 @@ export function VariantProvider({ children }: { children: ReactNode }) {
         });
       }
     },
-    [serializeShapes, createPreviewShapes]
+    [createPreviewShapes]
   );
 
   // Accept a variant - make shapes permanent
