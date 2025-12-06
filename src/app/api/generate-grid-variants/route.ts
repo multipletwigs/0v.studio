@@ -1,4 +1,5 @@
 import { createGateway, generateText, generateObject } from 'ai';
+import { put } from '@vercel/blob';
 import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -65,7 +66,8 @@ interface GridVariantsRequest {
 async function generateImageVariant(
   seedImageBase64: string,
   seedContext: string,
-  variantDescription: string
+  variantDescription: string,
+  index: number
 ): Promise<string> {
   // Generate a tldraw-style variant
   const imagePrompt = `Generate an image in tldraw drawing style. Content: ${seedContext}. Layout: ${variantDescription}. Style: Match the tldraw digital drawing aesthetic shown in the seed image - simple vector-like drawings with clean lines, basic shapes, and minimal colors. Maintain the same drawing style and visual language while applying the new layout.`;
@@ -93,11 +95,20 @@ async function generateImageVariant(
     ],
   });
 
-  // Extract the image from the files
+  // Extract the image from the files and upload to Vercel Blob
   for (const file of result.files) {
     if (file.mediaType.startsWith('image/')) {
-      // Return as base64 data URL with proper prefix
-      return `data:${file.mediaType};base64,${file.base64}`;
+      const buffer = Buffer.from(file.base64, 'base64');
+      const ext = file.mediaType.split('/')[1] || 'png';
+      const filename = `variant-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+      const blob = await put(filename, buffer, {
+        access: 'public',
+        contentType: file.mediaType,
+      });
+
+      console.log(`[generate-image-variant] Uploaded to Vercel Blob: ${blob.url}`);
+      return blob.url;
     }
   }
 
@@ -165,7 +176,7 @@ export async function POST(request: NextRequest) {
 
     const imagePromises = parsedDescriptions.descriptions.map((description, index) => {
       console.log(`[generate-grid-variants] Starting variant ${index + 1}`);
-      return generateImageVariant(image, parsedDescriptions.seed_context, description);
+      return generateImageVariant(image, parsedDescriptions.seed_context, description, index);
     });
 
     const imageUrls = await Promise.all(imagePromises);

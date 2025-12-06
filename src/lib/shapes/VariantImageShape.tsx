@@ -48,6 +48,7 @@ function VariantImageComponent({ shape }: { shape: VariantImageShape }) {
     >
       <div className="relative w-full h-full">
         <img
+          draggable={false}
           src={imageUrl}
           alt={description || 'Variant'}
           style={{

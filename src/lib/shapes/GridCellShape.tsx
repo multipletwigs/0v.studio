@@ -15,8 +15,15 @@ export type GridCellShape = TLBaseShape<
 
 // Component for rendering the shape
 function GridCellComponent({ shape }: { shape: GridCellShape }) {
+  const editor = useEditor();
   const { w, h, cellType, label } = shape.props;
-  const isGenerating = shape.meta.isGenerating as boolean | undefined;
+
+  // Use useValue to reactively track meta changes
+  const isGenerating = useValue(
+    'isGenerating',
+    () => editor.getShape(shape.id)?.meta.isGenerating as boolean | undefined,
+    [editor, shape.id]
+  );
 
   return (
     <HTMLContainer
@@ -46,7 +53,7 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
           border: cellType === 'seed'
             ? '2px solid black'
             : isGenerating
-              ? '2px dashed #a855f7'
+              ? '2px dashed #9ca3af'
               : '1px solid #e5e7eb',
           borderRadius: '12px',
           pointerEvents: 'none',
@@ -58,9 +65,9 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
         style={{
           position: 'absolute',
           top: '12px',
-          left: '21%',
+          left: cellType !== 'seed' && isGenerating ? '12%' : '21%',
           transform: 'translateX(-50%)',
-          backgroundColor: cellType === 'seed' ? '#3b82f6' : isGenerating ? '#a855f7' : '#6b7280',
+          backgroundColor: cellType === 'seed' ? '#3b82f6' : '#6b7280',
           color: 'white',
           padding: '4px 12px',
           borderRadius: '9999px',

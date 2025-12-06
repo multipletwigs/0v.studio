@@ -40,7 +40,7 @@ function CanvasInner() {
       <Sidebar />
       <div className="flex-1 relative">
         <Tldraw
-          persistenceKey='local-things'
+          persistenceKey='locally'
           shapeUtils={[GridCellShapeUtil, VariantImageShapeUtil]}
           components={{
             ContextMenu: null,

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useReducer, useCallback, useRef, type ReactNode } from 'react';
 import { createShapeId, type Editor, type TLShapeId, type TLPageId } from 'tldraw';
+import { trimImageWhitespace } from '@/lib/utils/trim-image';
 
 export interface GridCell {
   id: string;
@@ -333,8 +334,16 @@ export function GridProvider({ children }: { children: ReactNode }) {
 
         const data = await response.json();
 
-        // Create variant images immediately as pending shapes
-        for (let i = 0; i < data.variants.length && i < variantCells.length; i++) {
+        // Trim whitespace from all generated images in parallel
+        const trimmedImages = await Promise.all(
+          data.variants.map((variant: { imageUrl: string }) =>
+            trimImageWhitespace(variant.imageUrl)
+          )
+        );
+
+        // Create variant images with trimmed images
+        for (let i = 0; i < trimmedImages.length && i < variantCells.length; i++) {
+          const trimmedImageUrl = trimmedImages[i];
           const variant = data.variants[i];
           const cell = variantCells[i];
           const padding = 20;
@@ -348,7 +357,7 @@ export function GridProvider({ children }: { children: ReactNode }) {
             props: {
               w: cell.bounds.w - padding * 2,
               h: cell.bounds.h - padding * 2 - 40,
-              imageUrl: variant.imageUrl,
+              imageUrl: trimmedImageUrl,
               variantIndex: cell.index,
               description: variant.description,
             },
