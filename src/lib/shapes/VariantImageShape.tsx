@@ -152,6 +152,8 @@ function VariantImageComponent({ shape }: { shape: VariantImageShape }) {
         chatUrl: resultChatUrl,
         chatDetail: chatDetail,
         cellIdentifier: cellIdentifier,
+        variantDescription: variantDescription,
+        seedContext: seedContext,
       });
 
       toast.dismiss(toastId);

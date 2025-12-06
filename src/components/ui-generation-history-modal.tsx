@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trash } from '@phosphor-icons/react';
+import { Trash, Info } from '@phosphor-icons/react';
 
 interface UIGenerationHistoryModalProps {
   open: boolean;
@@ -23,6 +23,7 @@ export function UIGenerationHistoryModal({ open, onOpenChange, cellIdentifier }:
   const { history, clearHistory, removeFromHistory } = useUIGenerationHistory();
   const [selectedItem, setSelectedItem] = useState<UIGenerationHistoryItem | null>(null);
   const [activeTab, setActiveTab] = useState<string>('');
+  const [showDescription, setShowDescription] = useState(false);
 
   // Filter history by cellIdentifier if provided
   const filteredHistory = cellIdentifier 
@@ -149,17 +150,49 @@ export function UIGenerationHistoryModal({ open, onOpenChange, cellIdentifier }:
                       {formatDate(selectedItem.timestamp)}
                     </p>
                   </div>
-                  {activeTab && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleCopy(selectedItem.files.find(f => f.name === activeTab)?.content || '')}
-                    >
-                      Copy Current File
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {(selectedItem.variantDescription || selectedItem.seedContext) && (
+                      <Button
+                        type="button"
+                        variant={showDescription ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setShowDescription(!showDescription)}
+                        className="flex items-center gap-1"
+                      >
+                        <Info className="w-4 h-4" />
+                        {showDescription ? 'Hide Description' : 'Show Description'}
+                      </Button>
+                    )}
+                    {activeTab && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCopy(selectedItem.files.find(f => f.name === activeTab)?.content || '')}
+                      >
+                        Copy Current File
+                      </Button>
+                    )}
+                  </div>
                 </div>
+
+                {/* Description panel */}
+                {showDescription && (selectedItem.variantDescription || selectedItem.seedContext) && (
+                  <div className="px-4 py-3 border-b bg-blue-50 dark:bg-blue-950/20">
+                    {selectedItem.seedContext && (
+                      <div className="mb-2">
+                        <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">Context</p>
+                        <p className="text-sm text-blue-900 dark:text-blue-100">{selectedItem.seedContext}</p>
+                      </div>
+                    )}
+                    {selectedItem.variantDescription && (
+                      <div>
+                        <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">Variant Description</p>
+                        <p className="text-sm text-blue-900 dark:text-blue-100">{selectedItem.variantDescription}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex-1 overflow-hidden flex gap-4 p-4">
                   {/* Preview */}

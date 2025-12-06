@@ -4,7 +4,7 @@
  */
 export async function trimImageWhitespace(
   imageUrl: string,
-  threshold = 200, // pixels above this value become pure white
+  threshold = 200, // pixels above this value become #F9FAFB
   padding = 10 // padding to add around the content
 ): Promise<string> {
   return new Promise((resolve) => {

@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     console.log('[generate-ui] Variant description:', variantDescription);
 
     const apiKey = process.env.V0_API_KEY
-    
+
     if (!apiKey) {
       return NextResponse.json(
         { success: false, error: 'V0 API key not configured' },
@@ -50,6 +50,8 @@ export async function POST(request: NextRequest) {
         Its UI should be production ready, super polished, and can be competing with any other app in the market.
         It should also be realistic and functional.
         Generate clean, production-ready code UI with Tailwind CSS and shadcn/ui components.
+
+        Here is a description of the image, do not be bothered by the styles, it is for you to understand functionality -- Remember your goal is to generate final production ready UI using shadcn:
         ${contextPrompt}
       `,
       responseMode: 'sync',
