@@ -17,6 +17,7 @@ import type {
 import type { Variant } from '@/lib/schemas/shape-variants';
 import { variantReducer, initialState } from './variant-reducer';
 import { exportSelection } from '@/lib/utils/export-selection';
+import { useUIGenerationHistory } from '@/lib/stores/ui-generation-history';
 
 interface VariantContextValue {
   state: VariantGenerationState;
@@ -31,6 +32,7 @@ const VariantContext = createContext<VariantContextValue | null>(null);
 
 export function VariantProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(variantReducer, initialState);
+  const clearHistory = useUIGenerationHistory((state) => state.clearHistory);
 
   // Auto-dismiss errors after 3 seconds
   useEffect(() => {
@@ -82,6 +84,9 @@ export function VariantProvider({ children }: { children: ReactNode }) {
   // Generate variants from selected shapes
   const generateVariants = useCallback(
     async (editor: Editor) => {
+      // Reset history store when generating new variants
+      clearHistory();
+      
       const selectedIds = editor.getSelectedShapeIds();
       if (selectedIds.length === 0) {
         dispatch({ type: 'GENERATION_ERROR', error: 'No shapes selected' });
@@ -169,7 +174,7 @@ export function VariantProvider({ children }: { children: ReactNode }) {
         });
       }
     },
-    [createPreviewShapes]
+    [createPreviewShapes, clearHistory]
   );
 
   // Accept a variant - make shapes permanent

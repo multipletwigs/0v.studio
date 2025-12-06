@@ -5,8 +5,9 @@ import { createClient, type ChatDetail } from 'v0-sdk';
 import { put } from '@vercel/blob';
 import { useUIGenerationHistory } from '@/lib/stores/ui-generation-history';
 import { PreviewModal } from '@/components/preview-modal';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Clock, ArrowClockwise, SpinnerIcon } from '@phosphor-icons/react';
+import { Clock, ArrowClockwise } from '@phosphor-icons/react';
 import { eventEmitter } from '@/lib/utils/event-emitter';
 
 // Type definition
@@ -291,6 +292,16 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
     }
   };
 
+  const cellIdentifier = shape.props.cellType === 'variant' 
+  ? `Variant ${shape.props.cellIndex}` 
+  : `Seed`;
+  
+  const cellHistory = history.filter(
+    (item) => item.cellIdentifier === cellIdentifier
+  );
+
+  const hasHistory = cellHistory.length > 0;
+
   return (
     <HTMLContainer
       style={{
@@ -324,124 +335,60 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
         `}
       </style>
       {/* Generate UI Button and History Button - hidden when generating */}
-      <div style={{
-        position: 'absolute',
-        top: '-48px',
-        right: '0',
-        display: 'flex',
-        gap: '8px',
-        zIndex: 1000,
-      }}>
-        {cellType === 'variant' && hasAcceptedVariant && !isGeneratingUI && (() => {
-          const cellIdentifier = shape.props.cellType === 'variant'
-            ? `Variant ${shape.props.cellIndex}`
-            : `Seed`;
-          const cellHistory = history.filter(
-            (item) => item.cellIdentifier === cellIdentifier
-          );
-          // Hide Generate UI button if there's more than one history item
-          if (cellHistory.length > 1) {
-            return null;
-          }
-          return (
-            <button
-              type="button"
-              onPointerDown={handleGenerateUIClick}
-              disabled={isGeneratingUI}
-              style={{
-                position: 'absolute',
-                top: '-48px',
-                right: '0',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
-                backgroundSize: '200% 200%',
-                animation: 'shimmer 3s ease infinite, glow 2s ease-in-out infinite',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                padding: '10px 20px',
-                fontSize: '14px',
-                fontWeight: '700',
-                cursor: 'pointer',
-                boxShadow: '0 8px 24px rgba(139, 92, 246, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15)',
-                pointerEvents: 'all',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                letterSpacing: '0.5px',
-                transform: 'translateZ(0)',
-                zIndex: 1000,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
-                e.currentTarget.style.boxShadow = '0 12px 32px rgba(139, 92, 246, 0.6), 0 6px 16px rgba(0, 0, 0, 0.2)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                e.currentTarget.style.boxShadow = '0 8px 24px rgba(139, 92, 246, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15)';
-              }}
-            >
-              <span>
-                <span style={{
-                  fontSize: '14px',
-                  display: 'inline-block',
-                  marginRight: '6px',
-                  animation: 'sparkle 2s ease-in-out infinite',
-                }}>✨</span>
-                Generate UI
-              </span>
-            </button>
-          );
-        })()}
-        {/* Refresh button - show if cellIdentifier has more than one history item */}
-        {cellType === 'variant' && hasAcceptedVariant && (() => {
-          const cellIdentifier = shape.props.cellType === 'variant'
-            ? `Variant ${shape.props.cellIndex}`
-            : `Seed`;
-          const cellHistory = history.filter(
-            (item) => item.cellIdentifier === cellIdentifier
-          );
-          return cellHistory.length > 1 ? (
-            <button
-              type="button"
-              onPointerDown={handleGenerateUIClick}
-              disabled={isGeneratingUI}
-              style={{
-                background: 'white',
-                color: '#1f2937',
-                border: '1px solid #e5e7eb',
-                borderRadius: '12px',
-                padding: '10px 16px',
-                fontSize: '14px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                pointerEvents: 'all',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.2s ease',
-                zIndex: 1000,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#f9fafb';
-                e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'white';
-                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
-              }}
-            >
-              <ArrowClockwise size={16} weight="regular" />
-            </button>
-          ) : null;
-        })()}
-        <button
+        <div style={{
+          position: 'absolute',
+          top: '-48px',
+          right: '0',
+          display: 'flex',
+          gap: '8px',
+          zIndex: 1000,
+        }}>
+          {cellType === 'variant' && hasAcceptedVariant && (() => {
+            const cellIdentifier = shape.props.cellType === 'variant' 
+              ? `Variant ${shape.props.cellIndex}` 
+              : `Seed`;
+            const cellHistory = history.filter(
+              (item) => item.cellIdentifier === cellIdentifier
+            );
+            // Hide Generate UI button if there's more than one history item
+            if (cellHistory.length > 1) {
+              return null;
+            }
+            return (
+                <Button
+                  type="button"
+                  onPointerDown={handleGenerateUIClick}
+                  disabled={isGeneratingUI}
+                  className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 flex items-center gap-1"
+                >
+                  <span>Generate with</span>
+                  <svg
+                    data-testid="geist-icon"
+                    height="16"
+                    strokeLinejoin="round"
+                    viewBox="0 0 16 16"
+                    width="16"
+                    style={{ color: 'currentcolor' }}
+                    className="w-4 h-4"
+                    aria-label="v0 logo"
+                  >
+                    <title>v0</title>
+                    <path
+                      d="M6.0952 9.4643V5.5238H7.6190V10.5476C7.6190 11.1394 7.1394 11.6190 6.5476 11.6190C6.2651 11.6190 5.9862 11.5101 5.7857 11.3096L0 5.5238H2.1548L6.0952 9.4643Z M16 10.0952H14.4762V6.6071L10.9881 10.0952H14.4762V11.6190H10.5238C9.3403 11.6190 8.3810 10.6597 8.3810 9.4762V5.5238H9.9048V9.0238L13.4047 5.5238H9.9048V4H13.8571C15.0407 4 16 4.9594 16 6.1429V10.0952Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </Button>
+            );
+          })()}
+          {cellType === 'variant' && (
+          <button
           type="button"
           onPointerDown={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            const cellIdentifier = shape.props.cellType === 'variant'
-              ? `Variant ${shape.props.cellIndex}`
+            const cellIdentifier = shape.props.cellType === 'variant' 
+              ? `Variant ${shape.props.cellIndex}` 
               : `Seed`;
             console.log('[GridCell] Emitting open-history event:', cellIdentifier);
             eventEmitter.emit('open-history', cellIdentifier);
@@ -473,7 +420,8 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
         >
           <Clock size={16} weight="regular" />
         </button>
-      </div>
+        )}
+        </div>
 
       {/* Border element - separate so only it animates */}
       <div
@@ -562,6 +510,10 @@ export class GridCellShapeUtil extends BaseBoxShapeUtil<GridCellShape> {
     return <rect width={shape.props.w} height={shape.props.h} />;
   }
 
+  // Only seed cell cannot be deleted
+  canDelete(shape: GridCellShape) {
+    return shape.props.cellType !== 'seed';
+  }
 
   // Allow editing (unlocking to move/resize)
   canEdit() {
