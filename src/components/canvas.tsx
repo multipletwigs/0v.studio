@@ -10,10 +10,11 @@ import { VariantControls } from './variant-controls';
 import { GenerateVariantsButton } from './generate-variants-button';
 import { InsertShapesButton } from './insert-shapes-button';
 import { ExportShapesButton } from './export-shapes-button';
-import { GridVariantImages } from './grid-variant-images';
 import { GenerateUIButton } from './generate-ui-button';
 import { Sidebar } from './sidebar';
 import { downloadCanvas } from '@/lib/utils/export-canvas';
+import { GridCellShapeUtil } from '@/lib/shapes/GridCellShape';
+import { VariantImageShapeUtil } from '@/lib/shapes/VariantImageShape';
 
 function GridInitializer() {
   const editor = useEditor();
@@ -32,6 +33,7 @@ function CanvasInner() {
       <Sidebar />
       <div className="flex-1 relative">
         <Tldraw
+          shapeUtils={[GridCellShapeUtil, VariantImageShapeUtil]}
           components={{
             ContextMenu: null,
             HelpMenu: null,
@@ -201,7 +203,6 @@ function CanvasUI() {
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2">
         <GenerateGridButton />
       </div>
-      <GridVariantImages />
       <GenerateUIButton />
       <VariantControls />
     </>

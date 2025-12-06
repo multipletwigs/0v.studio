@@ -9,6 +9,7 @@ export interface GridCell {
   type: 'seed' | 'variant';
   bounds: { x: number; y: number; w: number; h: number };
   frameId?: TLShapeId;
+  imageShapeId?: TLShapeId;
   imageUrl?: string;
   isGenerating?: boolean;
 }
@@ -28,7 +29,7 @@ type GridAction =
   | { type: 'INIT_GRID'; cells: GridCell[] }
   | { type: 'SET_GRID_SIZE'; columns: number; rows: number }
   | { type: 'START_GENERATION' }
-  | { type: 'GENERATION_SUCCESS'; cellId: string; imageUrl: string }
+  | { type: 'GENERATION_SUCCESS'; cellId: string; imageUrl: string; imageShapeId: TLShapeId }
   | { type: 'GENERATION_COMPLETE' }
   | { type: 'GENERATION_ERROR' }
   | { type: 'CLEAR_VARIANT'; cellId: string }
@@ -112,7 +113,7 @@ function gridReducer(state: GridState, action: GridAction): GridState {
         ...state,
         cells: state.cells.map((cell) =>
           cell.id === action.cellId
-            ? { ...cell, imageUrl: action.imageUrl, isGenerating: false }
+            ? { ...cell, imageUrl: action.imageUrl, imageShapeId: action.imageShapeId, isGenerating: false }
             : cell
         ),
       };
@@ -135,7 +136,7 @@ function gridReducer(state: GridState, action: GridAction): GridState {
       return {
         ...state,
         cells: state.cells.map((cell) =>
-          cell.id === action.cellId ? { ...cell, imageUrl: undefined } : cell
+          cell.id === action.cellId ? { ...cell, imageUrl: undefined, imageShapeId: undefined } : cell
         ),
       };
 
@@ -143,7 +144,7 @@ function gridReducer(state: GridState, action: GridAction): GridState {
       return {
         ...state,
         cells: state.cells.map((cell) =>
-          cell.type === 'variant' ? { ...cell, imageUrl: undefined } : cell
+          cell.type === 'variant' ? { ...cell, imageUrl: undefined, imageShapeId: undefined } : cell
         ),
       };
 
@@ -157,8 +158,8 @@ interface GridContextValue {
   initializeGrid: (editor: Editor) => void;
   createNewPage: (editor: Editor) => void;
   generateVariants: (editor: Editor) => Promise<void>;
-  clearVariant: (cellId: string) => void;
-  clearAllVariants: () => void;
+  clearVariant: (cellId: string, editor: Editor) => void;
+  clearAllVariants: (editor: Editor) => void;
 }
 
 const GridContext = createContext<GridContextValue | null>(null);
@@ -178,27 +179,29 @@ export function GridProvider({ children }: { children: ReactNode }) {
       const newCells = state.cells.map((cell) => {
         const frameId = createShapeId();
 
-        // Create a frame shape for each cell
+        // Create a grid-cell shape for each cell
         editor.createShape({
           id: frameId,
-          type: 'frame',
+          type: 'grid-cell',
           x: cell.bounds.x,
           y: cell.bounds.y,
           props: {
             w: cell.bounds.w,
             h: cell.bounds.h,
-            name: cell.type === 'seed' ? '🌱 SEED' : `Variant ${cell.index}`,
+            cellType: cell.type,
+            cellIndex: cell.index,
+            label: cell.type === 'seed' ? '🌱 SEED' : `Variant ${cell.index}`,
           },
         });
 
         return { ...cell, frameId };
       });
 
-      // Lock all frames so they can't be moved accidentally
+      // Lock all grid cells so they can't be moved accidentally
       editor.updateShapes(
         newCells.map((cell) => ({
           id: cell.frameId!,
-          type: 'frame',
+          type: 'grid-cell',
           isLocked: true,
         }))
       );
@@ -327,7 +330,30 @@ export function GridProvider({ children }: { children: ReactNode }) {
           const variant = data.variants[i];
           const cell = variantCells[i];
 
-          dispatch({ type: 'GENERATION_SUCCESS', cellId: cell.id, imageUrl: variant.imageUrl });
+          // Create VariantImageShape as a separate shape
+          const imageShapeId = createShapeId();
+          const padding = 20; // Padding inside grid cell
+
+          editor.createShape({
+            id: imageShapeId,
+            type: 'variant-image',
+            x: cell.bounds.x + padding,
+            y: cell.bounds.y + padding + 30, // Extra padding for label
+            props: {
+              w: cell.bounds.w - padding * 2,
+              h: cell.bounds.h - padding * 2 - 30, // Adjust for label
+              imageUrl: variant.imageUrl,
+              variantIndex: cell.index,
+              description: variant.description,
+            },
+          });
+
+          dispatch({
+            type: 'GENERATION_SUCCESS',
+            cellId: cell.id,
+            imageUrl: variant.imageUrl,
+            imageShapeId: imageShapeId,
+          });
         }
 
         dispatch({ type: 'GENERATION_COMPLETE' });
@@ -341,17 +367,29 @@ export function GridProvider({ children }: { children: ReactNode }) {
   );
 
   const clearVariant = useCallback(
-    (cellId: string) => {
+    (cellId: string, editor: Editor) => {
+      const cell = state.cells.find((c) => c.id === cellId);
+      if (cell?.imageShapeId) {
+        editor.deleteShapes([cell.imageShapeId]); // Delete the image shape
+      }
       dispatch({ type: 'CLEAR_VARIANT', cellId });
     },
-    []
+    [state.cells]
   );
 
   const clearAllVariants = useCallback(
-    () => {
+    (editor: Editor) => {
+      const imageShapeIds = state.cells
+        .filter((cell) => cell.type === 'variant' && cell.imageShapeId)
+        .map((cell) => cell.imageShapeId!);
+
+      if (imageShapeIds.length > 0) {
+        editor.deleteShapes(imageShapeIds); // Delete all variant image shapes
+      }
+
       dispatch({ type: 'CLEAR_ALL_VARIANTS' });
     },
-    []
+    [state.cells]
   );
 
   return (

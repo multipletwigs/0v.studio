@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
             },
             {
               type: 'text',
-              text: 'Analyze this seed image and generate 3 creative layout variant descriptions.',
+              text: 'Analyze this seed image and generate 3 creative layout variant descriptions. Background must be white.',
             },
           ],
         },
