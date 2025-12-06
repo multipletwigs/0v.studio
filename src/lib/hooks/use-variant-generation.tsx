@@ -12,6 +12,7 @@ import { Editor, createShapeId, toRichText, type TLShapeId } from 'tldraw';
 import type {
   VariantGenerationState,
   GenerateVariantsResponse,
+  SerializedShape,
 } from '@/lib/types/variant-state';
 import type { Variant } from '@/lib/schemas/shape-variants';
 import { variantReducer, initialState } from './variant-reducer';
@@ -111,6 +112,21 @@ export function VariantProvider({ children }: { children: ReactNode }) {
         // Export selection as PNG and SVG
         const { imageBase64, svgString } = await exportSelection(editor);
 
+        // Serialize existing shapes for context
+        const existingShapes: SerializedShape[] = selectedIds.map((id) => {
+          const shape = editor.getShape(id);
+          if (!shape) return null;
+          return {
+            id: shape.id,
+            type: shape.type,
+            x: shape.x,
+            y: shape.y,
+            rotation: shape.rotation,
+            opacity: shape.opacity,
+            props: shape.props as Record<string, unknown>,
+          };
+        }).filter((s): s is SerializedShape => s !== null);
+
         const response = await fetch('/api/generate-variants', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -123,6 +139,7 @@ export function VariantProvider({ children }: { children: ReactNode }) {
               width: bounds.width,
               height: bounds.height,
             },
+            existingShapes,
           }),
         });
 

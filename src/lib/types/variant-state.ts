@@ -42,6 +42,7 @@ export interface GenerateVariantsRequest {
     width: number;
     height: number;
   };
+  existingShapes?: SerializedShape[];
   context?: string;
 }
 

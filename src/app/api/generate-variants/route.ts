@@ -2,7 +2,7 @@ import { createGateway, generateObject } from 'ai';
 import { variantsResponseSchema } from '@/lib/schemas/shape-variants';
 import type { GenerateVariantsRequest } from '@/lib/types/variant-state';
 import { NextRequest, NextResponse } from 'next/server';
-import { GENERATE_SHAPES_SYSTEM } from '@/lib/ai/prompts';
+import { AUTOCOMPLETE_DRAWING_SYSTEM } from '@/lib/ai/prompts';
 
 const gateway = createGateway({
   apiKey: process.env.AI_GATEWAY_API_KEY,
@@ -11,19 +11,33 @@ const gateway = createGateway({
 export async function POST(request: NextRequest) {
   try {
     const body: GenerateVariantsRequest = await request.json();
-    const { imageBase64, svgString, selectionBounds, context } = body;
+    const { imageBase64, svgString, selectionBounds, existingShapes, context } = body;
+
+    console.log('[generate-variants] Request received', {
+      hasImage: !!imageBase64,
+      imageSize: imageBase64?.length ?? 0,
+      hasSvg: !!svgString,
+      svgSize: svgString?.length ?? 0,
+      selectionBounds,
+      existingShapesCount: existingShapes?.length ?? 0,
+      context,
+    });
 
     if (!imageBase64) {
+      console.log('[generate-variants] Error: No image provided');
       return NextResponse.json(
         { success: false, error: 'No image provided' },
         { status: 400 }
       );
     }
 
+    console.log('[generate-variants] Calling Sonnet...');
+    const startTime = Date.now();
+
     const result = await generateObject({
-      model: gateway('anthropic/claude-opus-4-5'),
+      model: gateway('anthropic/claude-sonnet-4.5'),
       schema: variantsResponseSchema,
-      system: GENERATE_SHAPES_SYSTEM,
+      system: AUTOCOMPLETE_DRAWING_SYSTEM,
       messages: [
         {
           role: 'user',
@@ -34,15 +48,14 @@ export async function POST(request: NextRequest) {
             },
             {
               type: 'text',
-              text: `Recreate this hand-drawn sketch as freehand draw shapes.
+              text: `Read the handwritten text in this image and autocomplete the sentence. Generate TLDraw draw shapes for the continuation - only the NEW letters/words needed to finish the thought.
 
-${svgString ? `SVG reference:\n${svgString}\n` : ''}
-${context ? `Context: ${context}\n` : ''}
-Selection bounds: x=${selectionBounds.x.toFixed(0)}, y=${selectionBounds.y.toFixed(0)}, ${selectionBounds.width.toFixed(0)}×${selectionBounds.height.toFixed(0)}
+EXISTING SHAPES (do not recreate these):
+${JSON.stringify(existingShapes ?? [], null, 2)}
 
-Position the variant with offset: { x: ${(selectionBounds.width + 60).toFixed(0)}, y: 0 }
+SELECTION BOUNDS: x=${selectionBounds.x}, y=${selectionBounds.y}, width=${selectionBounds.width}, height=${selectionBounds.height}
 
-Generate exactly ONE variant recreating all the drawn elements as freehand paths.`,
+Position your new shapes starting AFTER x=${selectionBounds.x + selectionBounds.width} to continue the text.`,
             },
           ],
         },
@@ -50,12 +63,19 @@ Generate exactly ONE variant recreating all the drawn elements as freehand paths
       maxRetries: 3,
     });
 
+    const duration = Date.now() - startTime;
+    console.log('[generate-variants] Opus completed', {
+      duration: `${duration}ms`,
+      variantCount: result.object.variants.length,
+      shapeCount: result.object.variants[0]?.shapes.length ?? 0,
+    });
+
     return NextResponse.json({
       success: true,
       data: result.object,
     });
   } catch (error) {
-    console.error('Error generating variants:', error);
+    console.error('[generate-variants] Error:', error);
     return NextResponse.json(
       {
         success: false,
