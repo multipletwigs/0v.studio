@@ -1,4 +1,4 @@
-type EventCallback = (data?: string) => void;
+type EventCallback = (data?: string | { cellIdentifier?: string; pageId?: string }) => void;
 
 class EventEmitter {
   private events: Map<string, EventCallback[]> = new Map();
@@ -23,7 +23,7 @@ class EventEmitter {
     }
   }
 
-  emit(event: string, data?: string) {
+  emit(event: string, data?: string | { cellIdentifier?: string; pageId?: string }) {
     const callbacks = this.events.get(event);
     if (callbacks) {
       callbacks.forEach((callback) => {

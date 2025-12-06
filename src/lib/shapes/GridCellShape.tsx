@@ -25,6 +25,10 @@ export type GridCellShape = TLBaseShape<
 function GridCellComponent({ shape }: { shape: GridCellShape }) {
   const editor = useEditor();
   const { w, h, cellType, label } = shape.props;
+  
+  // Get current page ID
+  const currentPageId = useValue('currentPageId', () => editor.getCurrentPageId(), [editor]);
+
 
   // Use useValue to reactively track meta changes
   const isGenerating = useValue(
@@ -183,7 +187,7 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
       setPreviewUrl(previewUrl);
       setChatUrl(chatUrl || '');
 
-      // Save to history with cellIdentifier
+      // Save to history with cellIdentifier and pageId
       addToHistory({
         files: [],
         previewUrl,
@@ -191,6 +195,7 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
         chatUrl,
         chatDetail: chatDetail,
         cellIdentifier: cellIdentifier,
+        pageId: currentPageId,
       });
 
       console.log('[generate-ui] Saved to history:', {
@@ -229,7 +234,7 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
   : `Seed`;
   
   const cellHistory = history.filter(
-    (item) => item.cellIdentifier === cellIdentifier
+    (item) => item.cellIdentifier === cellIdentifier && item.pageId === currentPageId
   );
 
   const hasHistory = cellHistory.length > 0;
@@ -295,7 +300,7 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
               ? `Variant ${shape.props.cellIndex}`
               : `Seed`;
             const cellHistory = history.filter(
-              (item) => item.cellIdentifier === cellIdentifier
+              (item) => item.cellIdentifier === cellIdentifier && item.pageId === currentPageId
             );
             const historyCount = cellHistory.length;
 
@@ -307,8 +312,8 @@ function GridCellComponent({ shape }: { shape: GridCellShape }) {
                   onPointerDown={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
-                    console.log('[GridCell] Emitting open-history event:', cellIdentifier);
-                    eventEmitter.emit('open-history', cellIdentifier);
+                    console.log('[GridCell] Emitting open-history event:', cellIdentifier, currentPageId);
+                    eventEmitter.emit('open-history', { cellIdentifier, pageId: currentPageId });
                   }}
                 >
                   <Clock size={16} weight="regular" />

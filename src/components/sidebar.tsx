@@ -11,22 +11,29 @@ import { eventEmitter } from '@/lib/utils/event-emitter';
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(true); // Start collapsed
   const [filterCellIdentifier, setFilterCellIdentifier] = useState<string | null>(null);
+  const [filterPageId, setFilterPageId] = useState<string | null>(null);
   const { history, clearHistory, removeFromHistory } = useUIGenerationHistory();
   const [selectedPreviewUrl, setSelectedPreviewUrl] = useState<string>('');
   const [selectedChatUrl, setSelectedChatUrl] = useState<string>('');
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
   useEffect(() => {
-    const handleOpenHistory = (cellIdentifier?: string) => {
-      console.log('[Sidebar] Received open-history event:', cellIdentifier);
+    const handleOpenHistory = (data?: string | { cellIdentifier?: string; pageId?: string }) => {
+      // Handle both old format (string) and new format (object)
+      const cellIdentifier = typeof data === 'string' ? data : data?.cellIdentifier;
+      const pageId = typeof data === 'object' ? data?.pageId : undefined;
       
-      // Toggle: if sidebar is open and showing the same cellIdentifier, close it
-      if (!isCollapsed && filterCellIdentifier === cellIdentifier) {
+      console.log('[Sidebar] Received open-history event:', cellIdentifier, pageId);
+      
+      // Toggle: if sidebar is open and showing the same cellIdentifier and pageId, close it
+      if (!isCollapsed && filterCellIdentifier === cellIdentifier && filterPageId === pageId) {
         setIsCollapsed(true);
         setFilterCellIdentifier(null);
+        setFilterPageId(null);
       } else {
         // Otherwise, open sidebar with the new filter
         setFilterCellIdentifier(cellIdentifier || null);
+        setFilterPageId(pageId || null);
         setIsCollapsed(false);
       }
     };
@@ -38,7 +45,7 @@ export function Sidebar() {
       console.log('[Sidebar] Cleaning up event listener');
       eventEmitter.off('open-history', handleOpenHistory);
     };
-  }, [isCollapsed, filterCellIdentifier]);
+  }, [isCollapsed, filterCellIdentifier, filterPageId]);
 
   const handleItemClick = (item: { previewUrl: string; chatUrl?: string }) => {
     if (item.previewUrl) {
@@ -52,13 +59,15 @@ export function Sidebar() {
     return dayjs(timestamp).format('MMM D h:mm A');
   };
 
-  // Filter history by cellIdentifier if provided
-  // If filtering, show items that match the cellIdentifier OR items without cellIdentifier (backward compatibility)
+  // Filter history by cellIdentifier and pageId if provided
+  // If filtering, show items that match both cellIdentifier and pageId
+  // Include old items without pageId for backward compatibility
   const filteredHistory = filterCellIdentifier
-    ? history.filter((item) => 
-        item.cellIdentifier === filterCellIdentifier || 
-        !item.cellIdentifier // Include old items without cellIdentifier
-      )
+    ? history.filter((item) => {
+        const matchesCellIdentifier = item.cellIdentifier === filterCellIdentifier;
+        const matchesPageId = !filterPageId || item.pageId === filterPageId || !item.pageId; // Include items without pageId for backward compatibility
+        return matchesCellIdentifier && matchesPageId;
+      })
     : history;
 
   return (

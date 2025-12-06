@@ -1,4 +1,4 @@
-import { BaseBoxShapeUtil, HTMLContainer, Rectangle2d, T, useEditor } from 'tldraw';
+import { BaseBoxShapeUtil, HTMLContainer, Rectangle2d, T, useEditor, useValue } from 'tldraw';
 import type { TLBaseShape, RecordProps } from 'tldraw';
 import { Check, X, Clock } from '@phosphor-icons/react';
 import { useState } from 'react';
@@ -29,6 +29,9 @@ function VariantImageComponent({ shape }: { shape: VariantImageShape }) {
   // Check meta first (new), fallback to props (old persisted shapes)
   const pending = (shape.meta.pending ?? shape.props.pending) as boolean | undefined;
 
+  // Get current page ID
+  const currentPageId = useValue('currentPageId', () => editor.getCurrentPageId(), [editor]);
+
   const addToHistory = useUIGenerationHistory((state) => state.addToHistory);
   const history = useUIGenerationHistory((state) => state.history);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,7 +40,9 @@ function VariantImageComponent({ shape }: { shape: VariantImageShape }) {
   const [chatUrl, setChatUrl] = useState<string>('');
 
   const cellIdentifier = `Variant ${variantIndex}`;
-  const cellHistory = history.filter((item) => item.cellIdentifier === cellIdentifier);
+  const cellHistory = history.filter(
+    (item) => item.cellIdentifier === cellIdentifier && item.pageId === currentPageId
+  );
   const historyCount = cellHistory.length;
 
   const handleAccept = (e: React.PointerEvent) => {
@@ -154,6 +159,7 @@ function VariantImageComponent({ shape }: { shape: VariantImageShape }) {
         cellIdentifier: cellIdentifier,
         variantDescription: variantDescription,
         seedContext: seedContext,
+        pageId: currentPageId,
       });
 
       toast.dismiss(toastId);
@@ -177,8 +183,8 @@ function VariantImageComponent({ shape }: { shape: VariantImageShape }) {
   const handleHistoryClick = (e: React.PointerEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    console.log('[VariantImage] Emitting open-history event:', cellIdentifier);
-    eventEmitter.emit('open-history', cellIdentifier);
+    console.log('[VariantImage] Emitting open-history event:', cellIdentifier, currentPageId);
+    eventEmitter.emit('open-history', { cellIdentifier, pageId: currentPageId });
   };
 
   return (

@@ -17,6 +17,7 @@ export interface UIGenerationHistoryItem {
   cellIdentifier?: string; // e.g., "Variant 1", "Variant 2", "Seed"
   variantDescription?: string; // Description of the variant design
   seedContext?: string; // Context about what the seed image depicts
+  pageId?: string; // Current page ID when the history item was created
 }
 
 interface UIGenerationHistoryStore {
