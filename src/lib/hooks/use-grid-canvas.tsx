@@ -40,19 +40,23 @@ const CELL_WIDTH = 600;
 const CELL_HEIGHT = 600;
 const GAP = 60;
 
-// Layout: Seed on left (x=0), variants to the right (positive x)
+// Layout: 2x2 grid with seed at top-left (0,0)
 function calculateCellBounds(
   index: number,
   cellWidth: number,
   cellHeight: number,
   gap: number
 ) {
-  // Seed is at index 0, positioned at x=0
-  // Variants are to the right with positive x values
-  const x = index * (cellWidth + gap);
+  // Calculate column and row for 2x2 grid
+  const column = index % 2;
+  const row = Math.floor(index / 2);
+  
+  const x = column * (cellWidth + gap);
+  const y = row * (cellHeight + gap);
+  
   return {
     x,
-    y: 0,
+    y,
     w: cellWidth,
     h: cellHeight,
   };
@@ -69,7 +73,7 @@ function createGridCells(variantCount: number): GridCell[] {
     bounds: calculateCellBounds(0, CELL_WIDTH, CELL_HEIGHT, GAP),
   });
 
-  // Variant cells to the left (negative x)
+  // Variant cells in 2x2 grid layout
   for (let i = 1; i <= variantCount; i++) {
     cells.push({
       id: `variant-${i}`,
@@ -86,8 +90,8 @@ const VARIANT_COUNT = 3;
 
 const initialState: GridState = {
   cells: createGridCells(VARIANT_COUNT),
-  columns: VARIANT_COUNT + 1, // seed + variants
-  rows: 1,
+  columns: 2, // 2x2 grid
+  rows: 2,
   cellWidth: CELL_WIDTH,
   cellHeight: CELL_HEIGHT,
   gap: GAP,
@@ -104,8 +108,8 @@ function gridReducer(state: GridState, action: GridAction): GridState {
       const newCells = createGridCells(VARIANT_COUNT);
       return {
         ...state,
-        columns: VARIANT_COUNT + 1,
-        rows: 1,
+        columns: 2,
+        rows: 2,
         cells: newCells,
         initialized: false,
       };
@@ -228,7 +232,7 @@ export function GridProvider({ children }: { children: ReactNode }) {
       editor.setCurrentPage(newPageId);
 
       // Reset state for the new page
-      dispatch({ type: 'SET_GRID_SIZE', columns: VARIANT_COUNT + 1, rows: 1 });
+      dispatch({ type: 'SET_GRID_SIZE', columns: 2, rows: 2 });
 
       // Initialize grid on the new page after a tick
       setTimeout(() => {
@@ -375,12 +379,14 @@ export function GridProvider({ children }: { children: ReactNode }) {
           editor.deleteShapes(cellShapeIdsToDelete);
         }
 
-        // Center camera on all content (seed + variants)
+        // Center camera on all content (seed + variants) in 2x2 grid
         const allCells = state.cells;
         const minX = Math.min(...allCells.map((c) => c.bounds.x));
         const maxX = Math.max(...allCells.map((c) => c.bounds.x + c.bounds.w));
+        const minY = Math.min(...allCells.map((c) => c.bounds.y));
+        const maxY = Math.max(...allCells.map((c) => c.bounds.y + c.bounds.h));
         const centerX = (minX + maxX) / 2;
-        const centerY = seedCell.bounds.y + seedCell.bounds.h / 2;
+        const centerY = (minY + maxY) / 2;
         editor.centerOnPoint({ x: centerX, y: centerY }, { animation: { duration: 500 } });
 
         dispatch({ type: 'GENERATION_COMPLETE' });
